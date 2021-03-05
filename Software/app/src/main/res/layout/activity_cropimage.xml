@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_margin="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center"
+        android:textSize="20sp"
+        android:textColor="@android:color/black"
+        android:text="Select your ROI to reconsturct."/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+        <FrameLayout
+            android:layout_gravity="center"
+            android:layout_marginVertical="20dp"
+            android:background="@drawable/rectangle_onimage"
+            android:layout_width="100dp"
+            android:layout_height="100dp">
+            <ImageView
+                android:id="@+id/crop_image_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+            <ImageView
+                android:id="@+id/crop_image_edge"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/rectangle_onimage"/>
+        </FrameLayout>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="70dp">
+
+            <ImageView
+                android:id="@+id/full_image_view"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"/>
+
+            <ImageView
+                android:id="@+id/rect_on_ROI"
+                android:layout_gravity="center"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:src="@drawable/rectangle_onimage"/>
+        </FrameLayout>
+    </LinearLayout>
+    <Button
+        android:id="@+id/confirm_button"
+        android:layout_marginBottom="30dp"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom|center"
+        android:background="@drawable/button_background"
+        android:gravity="center"
+        android:text="CONFIRM"
+        android:textColor="#ffffff"
+        android:textSize="15sp" />
+</FrameLayout>

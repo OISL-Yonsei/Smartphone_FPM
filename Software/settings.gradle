@@ -1,0 +1,2 @@
+include ':app', 'opencv', ':jmatio'
+rootProject.name='OLED_FPM'

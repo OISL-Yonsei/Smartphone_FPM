@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: pl.edu.icm:JLargeArrays:1.5@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/pl.edu.icm/JLargeArrays/1.5/fe1350c7b5537c144fb0af39206e212ad1bbbe2/JLargeArrays-1.5.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/pl.edu.icm/JLargeArrays/1.5/aca319f34c58f5d4eeb0efa2f250fd185bed7931/JLargeArrays-1.5-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/pl.edu.icm/JLargeArrays/1.5/9a1806a1a4f7630852ab2401ef259f1e8db1dd12/JLargeArrays-1.5-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:paddingHorizontal="30dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff">
+
+    <TextView
+        android:layout_marginTop="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center"
+        android:textSize="20sp"
+        android:textColor="@android:color/black"
+        android:text="Input your settings for capturing."/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/editText_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="Number of dots in rows(default = 3)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editText_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="Radius of dot(px)(default = 15)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editText_step"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="step size(px)(default = 35)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editText_exp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="exposure time(us)(default = 200000)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editText_center_x"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="Center x position(px)(default = 878)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editText_center_y"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="Center y position(px)(default = 678)"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editText_sample_height"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="Sample height(mm)(default = 25)"
+            android:inputType="number" />
+        <RadioGroup
+            android:id="@+id/radio_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/radio_red"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="Red" />
+
+            <RadioButton
+                android:id="@+id/radio_green"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:checked="true"
+                android:text="Green" />
+
+            <RadioButton
+                android:id="@+id/radio_blue"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="Blue" />
+
+            <RadioButton
+                android:id="@+id/radio_white"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="White" />
+
+        </RadioGroup>
+        <RadioGroup
+            android:id="@+id/capture_radio_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/capture_radio_normal"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:checked="true"
+                android:text="Uniform" />
+
+            <RadioButton
+                android:id="@+id/capture_radio_uniform"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="K-uniform" />
+
+            <RadioButton
+                android:id="@+id/capture_radio_non_uniform"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="Non-uniform" />
+
+        </RadioGroup>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_gravity="bottom|center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp">
+        <Button
+            android:id="@+id/start_mono_button"
+            android:layout_width="120dp"
+            android:textSize="15sp"
+            android:layout_height="50dp"
+            android:background="@drawable/button_background"
+            android:text="Mono"
+            android:textColor="@android:color/white" />
+        <Button
+            android:id="@+id/start_rgb_button"
+            android:layout_width="120dp"
+            android:textSize="15sp"
+            android:layout_height="50dp"
+            android:layout_gravity="end"
+            android:background="@drawable/button_background"
+            android:text="RGB"
+            android:textColor="@android:color/white" />
+    </FrameLayout>
+</FrameLayout>
