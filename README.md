@@ -5,9 +5,9 @@
 ## Software 
 ### Install
 1. Install [Android Studio](https://developer.android.com/studio)
-2. Import Software folder
+2. Import software folder
 3. Connect phone
-4. Build and Run
+4. Build and run
 
 ### Requirements
 * Android SDK(min API = 26)
