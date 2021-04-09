@@ -17,10 +17,15 @@ import com.lukael.oled_fpm.constant.*
 import com.lukael.oled_fpm.model.HashmapData
 import com.lukael.oled_fpm.model.LedProps
 import com.lukael.oled_fpm.model.SystemOpts
-import com.lukael.oled_fpm.util.*
+import com.lukael.oled_fpm.util.Calculator
+import com.lukael.oled_fpm.util.FileSaver
+import com.lukael.oled_fpm.util.FourierTransformer
+import com.lukael.oled_fpm.util.LineDebugger
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Function3
+import io.reactivex.functions.Function9
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.action_bar.*
 import kotlinx.android.synthetic.main.activity_reconstruct.*
@@ -45,6 +50,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
     /** thread messaging **/
     private var fullTask: Disposable ?= null // rxjava handling
+    private var fullTask2: Disposable ?= null // rxjava handling
     var message: Message? = null
     private var handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
@@ -58,26 +64,51 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         }
     }
 
+
+    // Sequence size
+    private var parallelsize = 5
+//    private var sequencesize = 2
+
     /** data for function input & output **/
-    private var reconstructInputData = HashmapData()
-    private var preProcessOutputData = HashmapData()
+    private var reconstructInputData = arrayOfNulls<HashmapData>(parallelsize)
+    private var preProcessOutputData = arrayOfNulls<HashmapData>(parallelsize)
+
+//    /** system parameters for processing **/
+//    private var nImg = 0
+//    private lateinit var du: DoubleArray
+//    private lateinit var illuminationNA: DoubleArray
+//    private var freqUV: Array<DoubleArray>? = null
+//    private var freqUVCal: Array<DoubleArray>? = null
+//    private var freqUVDesign: Array<DoubleArray>? = null
+//    private lateinit var dfi: IntArray
+
+
+//    /** variables needed for each rgb object **/
+//    // results - before normalizing
+//    private var objRComplex = arrayOfNulls<Mat>(2)
+//    private var objR = Mat()
+//    // results - after normalizing
+//    private var ampResults = Mat()
+//    private var orgResults = Mat()
+//    private var phaseResult: Mat? = null
 
     /** system parameters for processing **/
     private var nImg = 0
-    private lateinit var du: DoubleArray
-    private lateinit var illuminationNA: DoubleArray
-    private var freqUV: Array<DoubleArray>? = null
-    private var freqUVCal: Array<DoubleArray>? = null
-    private var freqUVDesign: Array<DoubleArray>? = null
-    private lateinit var dfi: IntArray
+    private lateinit var du: Array<DoubleArray>
+    private lateinit var illuminationNA: Array<DoubleArray>
+    private var freqUV: Array<Array<DoubleArray>>? = null
+    private var freqUVCal: Array<Array<DoubleArray>>? = null
+    private var freqUVDesign: Array<Array<DoubleArray>>? = null
+    private lateinit var dfi: Array<IntArray>
+    private var curIs: Array<Mat?>? = null
 
     /** variables needed for each rgb object **/
     // results - before normalizing
-    private var objRComplex = arrayOfNulls<Mat>(2)
-    private var objR = Mat()
+    private val objRComplex = Array(parallelsize) { arrayOfNulls<Mat>(parallelsize) }
+    private val objR = arrayOfNulls<Mat>(parallelsize)
     // results - after normalizing
-    private var ampResults = Mat()
-    private var orgResults = Mat()
+    private var ampResults = arrayOfNulls<Mat>(parallelsize)
+    private var orgResults = arrayOfNulls<Mat>(parallelsize)
     private var phaseResult: Mat? = null
 
     /** Mats for display **/
@@ -103,6 +134,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
     private lateinit var root : File
 
     private var nStart = IntArray(2)
+    private var nStart_x = IntArray(parallelsize)
+    private var nStart_y = IntArray(parallelsize)
 
     //Requesting permission.
     private val permissions: Unit
@@ -124,7 +157,27 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         initUI() // initialize UI
 
         initSettings() // settings (debugger, nImg and other things)
-        startFullTask() // thread processing & reconstructing
+        loadimages()
+//        startFullTask_para() // thread processing & reconstructing
+        for (i in 0 until parallelsize) {
+            preProcessOutputData[0] = preProcessMono(0, nStart_x[i], nStart_y[i], 0)
+            message = handler.obtainMessage()
+            message?.arg1 = PROGRESS_2
+            handler.sendMessage(message!!)
+            message = handler.obtainMessage()
+            message?.arg1 = 0
+            message?.obj = "Configuring Reconstruct..."
+            handler.sendMessage(message!!)
+            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+            fpmFunc(reconstructInputData[0])
+        }
+        orgObjAmp = orgResults[0]
+        resObjAmp = ampResults[0]
+        progress_layout.visibility = View.INVISIBLE
+        message = handler.obtainMessage()
+        message?.arg1 = SHOW_RESULT
+        message?.arg2 = 3
+        handler.sendMessage(message!!)
     }
 
     override fun getPassedInfo() {
@@ -135,6 +188,11 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         } else {
             nStart[0] = nStartGiven[0]
             nStart[1] = nStartGiven[1]
+        }
+        // Position caculator
+        for (i in 0 until parallelsize) {
+            nStart_x[i] = nStart[0] + (i * 200)
+            nStart_y[i] = nStart[1]
         }
 
         // input and output filenames
@@ -183,20 +241,28 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
         // information about saving file
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREAN).format(Date())
-        ampFileName = fileStart + "_" + timeStamp + "_amp.jpg"
-        phaseFileName = fileStart + "_" + timeStamp + "_phase.jpg"
+        ampFileName = fileStart + "_" + timeStamp + "_" + nStart[0].toString() + "_" + nStart[1].toString() + "_amp.jpg"
+        phaseFileName = fileStart + "_" + timeStamp + "_" + nStart[0].toString() + "_" + nStart[1].toString() + "_phase.jpg"
 
         // count number of images into nImg
         countNImg()
 
         // initialization for arrays related with nLed
+//        ledProps.updateNLED(nImg, imgCenter)
+//        freqUV = Array(ledProps.nled) { DoubleArray(2) }
+//        freqUVCal = Array(ledProps.nled) { DoubleArray(2) }
+//        freqUVDesign = Array(ledProps.nled) { DoubleArray(2) }
+//        dfi = IntArray(ledProps.nled)
+//        illuminationNA = DoubleArray(nImg)
+        curIs = arrayOfNulls<Mat>(nImg)
+//        du = DoubleArray(2)
         ledProps.updateNLED(nImg, imgCenter)
-        freqUV = Array(ledProps.nled) { DoubleArray(2) }
-        freqUVCal = Array(ledProps.nled) { DoubleArray(2) }
-        freqUVDesign = Array(ledProps.nled) { DoubleArray(2) }
-        dfi = IntArray(ledProps.nled)
-        illuminationNA = DoubleArray(nImg)
-        du = DoubleArray(2)
+        freqUV = Array(parallelsize) { Array(ledProps.nled) { DoubleArray(2) } }
+        freqUVCal = Array(parallelsize) { Array(ledProps.nled) { DoubleArray(2) } }
+        freqUVDesign = Array(parallelsize) { Array(ledProps.nled) { DoubleArray(2) } }
+        dfi = Array(parallelsize) { IntArray(ledProps.nled) }
+        illuminationNA = Array(parallelsize) { DoubleArray(nImg) }
+        du = Array(parallelsize) { DoubleArray(2) }
     }
 
     override fun countNImg() {
@@ -212,16 +278,93 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         }
     }
 
+    fun loadimages() {
+        val tag = "load-images"
+
+        // distortion value
+        var distValue = floatArrayOf(0.0313690384695265F, -0.00126679968152714F, 0F, 0F)
+        var distMat = Mat(1, 4, CvType.CV_32F)
+        distMat.put(0, 0, distValue);
+
+        var mtxValue = floatArrayOf(688.015419803622F, 0F, 1595.36915351398F, 0F, 688.013187402952F, 1215.45121729576F, 0F, 0F, 1F)
+        var mtxMat = Mat(3, 3, CvType.CV_32F)
+        mtxMat.put(0, 0, mtxValue);
+
+        for (m in 0 until nImg) {
+            // update ui for loading images
+
+            message = handler.obtainMessage()
+            message?.arg1 = 0
+            message?.obj = "Loading Images... " + (m + 1) + "/" + nImg
+            handler.sendMessage(message!!)
+
+            // configure filename
+            val imgName = fileStart + "_" + (m + 1).toString().padStart(3, '0') + fileEnd
+            val filepath = "$root/Pictures/OLED_FPM/$imgName"
+            Log.d(tag, filepath)
+
+            //Reading the Image from the file, and crop it
+            val curI = Imgcodecs.imread(filepath, Imgcodecs.IMREAD_COLOR) // grayscale makes it blurry
+            Core.extractChannel(curI, curI, 1) // green
+
+            // Distortion corrections
+            var curIUndist = Mat(curI.rows(), curI.cols(), CvType.CV_32F)
+            Calib3d.undistort(curI, curIUndist, mtxMat, distMat, mtxMat)
+
+            curIs?.set(m, curI)
+            if (m > 0 && m % 10 == 0) Runtime.getRuntime().gc() // garbage collector
+        }
+        Log.d(tag, "file load completed")
+    }
+
     override fun startFullTask(){
+        TODO("Not yet implemented")
+    }
+
+    fun startFullTask_para(){
         /** pre-process, configure, and reconstruct with RxJava threading **/
         // concat: execute threads in sequential order
         // zip : execute threads at once, and wait for all to finish
         fullTask = Single.concat(
                 // 1) preprocess
-                Single.fromCallable {
-                    preProcessOutputData = preProcess(0)
-                    false
-                }.subscribeOn(Schedulers.io())
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[0], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[1], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[2], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[3], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[4], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
                         .observeOn(AndroidSchedulers.mainThread())
                         .doOnSuccess {
                             message = handler.obtainMessage()
@@ -233,23 +376,90 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                             handler.sendMessage(message!!)
                         },
                 // 2) configure reconstruction
-                Single.fromCallable {
-                    reconstructInputData = configureReconstruct(
-                            preProcessOutputData)
-                    false
-                }.subscribeOn(Schedulers.io())
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
                         .observeOn(AndroidSchedulers.mainThread()),
                 // 3) reconstruct iterations
-                Single.fromCallable {
-                    fpmFunc(reconstructInputData) // r
-                    false
-                }.subscribeOn(Schedulers.io())
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            fpmFunc(reconstructInputData[5])
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            fpmFunc(reconstructInputData[6])
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            fpmFunc(reconstructInputData[7])
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+//                        Single.fromCallable {
+//                            fpmFunc(reconstructInputData[8])
+//                            false
+//                        }.subscribeOn(Schedulers.io()),
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
                         .observeOn(AndroidSchedulers.mainThread())
                         .doOnSuccess {
                             // merge rgb
-                            val colorCombiner = ColorCombiner()
-                            orgObjAmp = orgResults
-                            resObjAmp = ampResults
+//                            val colorCombiner = ColorCombiner()
+                            orgObjAmp = orgResults[0]
+                            resObjAmp = ampResults[0]
                             progress_layout.visibility = View.INVISIBLE
                             message = handler.obtainMessage()
                             message?.arg1 = SHOW_RESULT
@@ -308,6 +518,25 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         fileSaver.saveBmpImage(applicationContext, resultOBitmapAngle!!, phaseFileName)
     }
 
+    private fun saveImageauto(amp: Mat, phase: Mat, crop_x: Int, crop_y: Int) {
+        // result object amplitude
+        Core.normalize(amp, amp, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_8UC3) // Transform the matrix with float values
+        var resultOBitmapauto = Bitmap.createBitmap(amp!!.rows(), amp!!.cols(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(amp, resultOBitmapauto)
+
+        // result object phase
+        Core.normalize(phase, phase, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_8UC1) // Transform the matrix with float values
+        var resultOBitmapAngleauto = Bitmap.createBitmap(phase!!.rows(), phase!!.cols(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(phase, resultOBitmapAngleauto)
+
+        var timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREAN).format(Date())
+        var ampFileNameauto = fileStart + "_" + timeStamp + "_" + crop_x.toString() + "_" + crop_y.toString() + "_amp.jpg"
+        var phaseFileNameauto = fileStart + "_" + timeStamp + "_" + crop_x.toString() + "_" + crop_y.toString() + "_phase.jpg"
+
+        fileSaver.saveBmpImage(applicationContext, resultOBitmapauto!!, ampFileNameauto)
+        fileSaver.saveBmpImage(applicationContext, resultOBitmapAngleauto!!, phaseFileNameauto)
+    }
+
     override fun showBefore() {
         // original object amplitude
         Core.normalize(orgObjAmp, orgObjAmp, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_8UC1) // Transform the matrix with float values
@@ -327,48 +556,53 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
     }
 
     override fun preProcess(iRGB: Int): HashmapData {
+        TODO("Not yet implemented")
+    }
+
+    fun preProcessMono(iRGB: Int, crop_x: Int, crop_y: Int, index: Int): HashmapData {
         /** pre-process image **/
         val tag = "pre-process"
 
-        // distortion value
-        var distValue = floatArrayOf(0.0313690384695265F, -0.00126679968152714F, 0F, 0F)
-        var distMat = Mat(1, 4, CvType.CV_32F)
-        distMat.put(0, 0, distValue);
-
-        var mtxValue = floatArrayOf(688.015419803622F, 0F, 1595.36915351398F, 0F, 688.013187402952F, 1215.45121729576F, 0F, 0F, 1F)
-        var mtxMat = Mat(3, 3, CvType.CV_32F)
-        mtxMat.put(0, 0, mtxValue);
+//        // distortion value
+//        var distValue = floatArrayOf(0.0313690384695265F, -0.00126679968152714F, 0F, 0F)
+//        var distMat = Mat(1, 4, CvType.CV_32F)
+//        distMat.put(0, 0, distValue);
+//
+//        var mtxValue = floatArrayOf(688.015419803622F, 0F, 1595.36915351398F, 0F, 688.013187402952F, 1215.45121729576F, 0F, 0F, 1F)
+//        var mtxMat = Mat(3, 3, CvType.CV_32F)
+//        mtxMat.put(0, 0, mtxValue);
 
         // outputs
         val preProcessOutputData = HashmapData()
         val ibk = Mat(2, nImg, CvType.CV_32F)
         val cropImages = arrayOfNulls<Mat>(nImg)
 
+
         // read in all images into the memory first
         Log.d(tag, "loading the images...")
         for (m in 0 until nImg) {
             // update ui for loading images
 
-            message = handler.obtainMessage()
-            message?.arg1 = 0
-            message?.obj = "Loading Images... " + (m + 1) + "/" + nImg
-            handler.sendMessage(message!!)
+//            message = handler.obtainMessage()
+//            message?.arg1 = 0
+//            message?.obj = "Loading Images... " + (m + 1) + "/" + nImg
+//            handler.sendMessage(message!!)
 
-            // configure filename
-            val imgName = fileStart + "_" + (m + 1).toString().padStart(3, '0') + fileEnd
-            val filepath = "$root/Pictures/OLED_FPM/$imgName"
-            Log.d(tag, filepath)
+//            // configure filename
+//            val imgName = fileStart + "_" + (m + 1).toString().padStart(3, '0') + fileEnd
+//            val filepath = "$root/Pictures/OLED_FPM/$imgName"
+//            Log.d(tag, filepath)
+//
+//            //Reading the Image from the file, and crop it
+//            val curI = Imgcodecs.imread(filepath, Imgcodecs.IMREAD_COLOR) // grayscale makes it blurry
+//            Core.extractChannel(curI, curI, 1) // green
+//
+//            // Distortion corrections
+//            var curIUndist = Mat(curI.rows(), curI.cols(), CvType.CV_32F)
+//            Calib3d.undistort(curI, curIUndist, mtxMat, distMat, mtxMat)
 
-            //Reading the Image from the file, and crop it
-            val curI = Imgcodecs.imread(filepath, Imgcodecs.IMREAD_COLOR) // grayscale makes it blurry
-            Core.extractChannel(curI, curI, 1) // green
-
-            // Distortion corrections
-            var curIUndist = Mat(curI.rows(), curI.cols(), CvType.CV_32F)
-            Calib3d.undistort(curI, curIUndist, mtxMat, distMat, mtxMat)
-
-            val rectCrop = Rect(nStart[1] - 1, nStart[0] - 1, Np, Np)
-            val cropImage = Mat(curIUndist, rectCrop)
+            val rectCrop = Rect(crop_y - 1, crop_x - 1, Np, Np)
+            val cropImage = Mat(curIs?.get(m), rectCrop)
             cropImage.convertTo(cropImage, CvType.CV_32F)
             Core.multiply(cropImage, Scalar(256.0), cropImage) // for jpg image only
 
@@ -376,13 +610,13 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
             // specify background region for background noise estimation
 
-            val cropI1 = curI.submat(Rect(0, 0, 100, 100))
-            var bk1 = Core.sumElems(cropI1).`val`[0]
-            bk1 /= 10000.0
-
-            val cropI2 = curI.submat(Rect(curI.cols() - 200, curI.rows() - 200, 100, 100))
-            var bk2 = Core.sumElems(cropI2).`val`[0]
-            bk2 /= 10000.0
+//            val cropI1 = curIs?.get(m)?.submat(Rect(0, 0, 100, 100))
+//            var bk1 = Core.sumElems(cropImage).`val`[0]
+            var bk1 = 0.0
+//
+//            val cropI2 = curIs?.get(m)?.submat(curIs!![m]?.cols()?.minus(200)?.let { Rect(it, curIs!![m]?.rows() - 200, 100, 100) })
+//            var bk2 = Core.sumElems(cropImage).`val`[0]
+            var bk2 = 0.0
 
             ibk.put(0, m, bk1)
             ibk.put(1, m, bk2)
@@ -396,6 +630,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         preProcessOutputData.putMat("ibk", ibk)
         preProcessOutputData.putInt("nImg", nImg)
         preProcessOutputData.putInt("iRGB", iRGB)
+        preProcessOutputData.putInt("crop_x", crop_x)
+        preProcessOutputData.putInt("crop_y", crop_y)
+        preProcessOutputData.putInt("index", index)
         return preProcessOutputData
     }
 
@@ -417,6 +654,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val ibk = preprocessedData.getMat("ibk")!!
         val nImg = preprocessedData.getInt("nImg")!!
         val iRGB = preprocessedData.getInt("iRGB")!!
+        val crop_x = preprocessedData.getInt("crop_x")!!
+        val crop_y = preprocessedData.getInt("crop_y")!!
+        val index = preprocessedData.getInt("index")!!
 
         // nSampleR, iBk
         val nSampleR = intArrayOf(cropImages[0]!!.rows(), cropImages[0]!!.cols())
@@ -462,6 +702,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         defineSystemInput.putDouble("mag", mag)
         defineSystemInput.putInt1DArray("nSampleR", nSampleR)
         defineSystemInput.putInt("nImg", nImg)
+        defineSystemInput.putInt("crop_x", crop_x)
+        defineSystemInput.putInt("crop_y", crop_y)
+        defineSystemInput.putInt("index", index)
 
         // define system
         val systemOpts = defineSystem(defineSystemInput) // variables set after this call
@@ -469,24 +712,21 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val wNA = systemOpts.wNA
 
         //  reorder of data and parameters that will be used in reconstruction
-        val idx = calculator.argSort(illuminationNA, true)
-        val copyIlluminationNA = illuminationNA.clone()
+        val idx = calculator.argSort(illuminationNA[index], true)
+        val copyIlluminationNA = illuminationNA[index].clone()
         val copyI = cropImages.clone()
-        val copyFreqUV = freqUV!!.clone()
-        val copyFreqUVCal = freqUVCal!!.clone()
-        val copyFreqUVDesign = freqUVDesign!!.clone()
-        val copyDFI = dfi.clone()
+        val copyFreqUV = freqUV!![index].clone()
+        val copyFreqUVCal = freqUVCal!![index].clone()
+        val copyFreqUVDesign = freqUVDesign!![index].clone()
+        val copyDFI = dfi[index].clone()
         for (i in 0 until nImg) {
-            illuminationNA[i] = copyIlluminationNA[idx[i]!!]
+            illuminationNA[index][i] = copyIlluminationNA[idx[i]!!]
             cropImages[i] = copyI[idx[i]!!]
-            freqUV!![i] = copyFreqUV[idx[i]!!]
-            freqUVCal!![i] = copyFreqUVCal[idx[i]!!]
-            freqUVDesign!![i] = copyFreqUVDesign[idx[i]!!]
-            dfi[i] = copyDFI[idx[i]!!]
+            freqUV!![index][i] = copyFreqUV[idx[i]!!]
+            freqUVCal!![index][i] = copyFreqUVCal[idx[i]!!]
+            freqUVDesign!![index][i] = copyFreqUVDesign[idx[i]!!]
+            dfi[index][i] = copyDFI[idx[i]!!]
         }
-
-
-
 
         // calculate O0 : initial guess for obj( in real space) % Initialize to normalized coherent sum
         val row = cropImages[0]!!.rows()
@@ -512,6 +752,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         reconstructInputData.putInt1DArray("nObj", nObj)
         reconstructInputData.putMat1DArray("I", cropImages)
         reconstructInputData.putInt("maxIteration", maxIter)
+        reconstructInputData.putInt("crop_x", crop_x)
+        reconstructInputData.putInt("crop_y", crop_y)
+        reconstructInputData.putInt("index", index)
         return reconstructInputData
     }
 
@@ -526,6 +769,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val mag = defineSystemInput.getDouble("mag")!!
         val dPixC = defineSystemInput.getDouble("dPixC")!!
         val nSampleR = defineSystemInput.getInt1DArray("nSampleR")!!
+        val crop_x = defineSystemInput.getInt("crop_x")!!
+        val crop_y = defineSystemInput.getInt("crop_y")!!
+        val index = defineSystemInput.getInt("index")!!
 
         val wNA = Mat() // init
 
@@ -537,8 +783,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         fieldOfView[0] = nSampleR[0] * dPixM
         fieldOfView[1] = nSampleR[1] * dPixM // FoV in the object space;
 
-        imgNCent[0] = (nStart[0] - nCent[0] + Np / 2).toDouble()
-        imgNCent[1] = (nStart[1] - nCent[1] + Np / 2).toDouble()
+        imgNCent[0] = (crop_x - nCent[0] + Np / 2).toDouble()
+        imgNCent[1] = (crop_y - nCent[1] + Np / 2).toDouble()
 
         imgCenter[0] = imgNCent[0] * dPixM
         imgCenter[1] = imgNCent[1] * dPixM
@@ -571,36 +817,36 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
             }
         }
         for (i in 0 until ledProps.nled) {
-            freqUVDesign!![i][0] = sinThetaHUsed[i] / wavelength
-            freqUVDesign!![i][1] = sinThetaVUsed[i] / wavelength
-            freqUVCal!![i][0] = sinThetaHUsed[i] / wavelength
-            freqUVCal!![i][1] = sinThetaVUsed[i] / wavelength
+            freqUVDesign!![index][i][0] = sinThetaHUsed[i] / wavelength
+            freqUVDesign!![index][i][1] = sinThetaVUsed[i] / wavelength
+            freqUVCal!![index][i][0] = sinThetaHUsed[i] / wavelength
+            freqUVCal!![index][i][1] = sinThetaVUsed[i] / wavelength
         }
 
         // Figure out which illumination to use
         // parameters
-        freqUV = freqUVCal!!
+        freqUV!![index] = freqUVCal!![index]
         for (i in 0 until nImg) {
             Log.d(tag, illuminationNA.size.toString() + ", " + freqUV!!.size)
-            illuminationNA[i] = sqrt(freqUV!![i][0].pow(2.0) + freqUV!![i][1].pow(2.0)) * wavelength
+            illuminationNA[index][i] = sqrt(freqUV!![index][i][0].pow(2.0) + freqUV!![index][i][1].pow(2.0)) * wavelength
         }
         for (k in 0 until ledProps.nled) {
-            if (illuminationNaUsed[k] <= NA) dfi[k] = 0 else dfi[k] = 1
+            if (illuminationNaUsed[k] <= NA) dfi[index][k] = 0 else dfi[index][k] = 1
         }
         if (nSampleR[0] % 2 == 1) { // Row
-            du[0] = 1 / dPixM / (nSampleR[0] - 1)
+            du[index][0] = 1 / dPixM / (nSampleR[0] - 1)
         } else {
-            du[0] = 1 / fieldOfView[1] // Sampling size at Fourier plane is always = 1 / FoV;
+            du[index][0] = 1 / fieldOfView[1] // Sampling size at Fourier plane is always = 1 / FoV;
         }
         if (nSampleR[1] % 2 == 1) { // Col
-            du[1] = 1 / dPixM / (nSampleR[1] - 1)
+            du[index][1] = 1 / dPixM / (nSampleR[1] - 1)
         } else {
-            du[1] = 1 / fieldOfView[1]
+            du[index][1] = 1 / fieldOfView[1]
         }
 
         val umIdx = Mat(1, 2, CvType.CV_32F)
-        umIdx.put(0, 0, uMax / du[0])
-        umIdx.put(0, 1, uMax / du[1]) //max spatial freq/sample size at Fourier plane = number of samples in Fourier space (?)
+        umIdx.put(0, 0, uMax / du[index][0])
+        umIdx.put(0, 1, uMax / du[index][1]) //max spatial freq/sample size at Fourier plane = number of samples in Fourier space (?)
 
         val n = Mat()
         val m = Mat()
@@ -634,7 +880,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
         // maximum spatial frequency achievable based on the maximum illumination
         // angle from the LED array and NA of the objective
-        val umP = calculator.maxValue(illuminationNA) / wavelength + uMax
+        val umP = calculator.maxValue(illuminationNA[index]) / wavelength + uMax
         // resolution achieved after freq post-processing
         val naS = umP * wavelength
         Log.d(tag, "synthetic NA : $naS") // 0.41630899, test ok
@@ -644,9 +890,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         // assume the # of pixels of the original object
         // up-sample by 2 for intensity
         val nObj= IntArray(2)
-        nObj[0] = (umP / du[0]).roundToInt() * 2 * 2 // Solving for the number of samples in freq space
-        nObj[1] = (umP / du[1]).roundToInt() * 2 * 2
-        Log.d(tag, umP.toString() + "," + du[0] + "," + du[1])
+        nObj[0] = (umP / du[index][0]).roundToInt() * 2 * 2 // Solving for the number of samples in freq space
+        nObj[1] = (umP / du[index][1]).roundToInt() * 2 * 2
+        Log.d(tag, umP.toString() + "," + du[index][0] + "," + du[index][1])
         Log.d(tag, nObj[0].toString() + "," + nObj[1])
 
         //Follows rate = 2*BW where BW=um_p (max spatial freq) and rate = N_obj/du
@@ -657,8 +903,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         nObj[1] = ceil(nObj[1].toDouble() / nSampleR[1].toDouble()).toInt() * nSampleR[1]
 
         val umObj = DoubleArray(2)
-        umObj[0] = du[0] * nObj[0] / 2
-        umObj[1] = du[1] * nObj[1] / 2
+        umObj[0] = du[index][0] * nObj[0] / 2
+        umObj[1] = du[index][1] * nObj[1] / 2
 
         // sampling size of the object (=pixel size of the test image)
         val dxObj = DoubleArray(2)
@@ -687,16 +933,16 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         // for object space
 
         val uv = calculator.myMeshGrid(
-                calculator.myArrange(-umObj[1], umObj[1], du[1]),
-                calculator.myArrange(-umObj[0], umObj[0], du[0]))
+                calculator.myArrange(-umObj[1], umObj[1], du[index][1]),
+                calculator.myArrange(-umObj[0], umObj[0], du[index][0]))
         val u = uv[0]
         val v = uv[1]
         //lineDebugger.timeFactorTest()
 
         // for image space
         val u0v0 = calculator.myMeshGrid(
-                calculator.myArrange(-du[1] * nSampleR[1] / 2, du[1] * nSampleR[1] / 2, du[1]),
-                calculator.myArrange(-du[0] * nSampleR[0] / 2, du[0] * nSampleR[0] / 2, du[0]))
+                calculator.myArrange(-du[index][1] * nSampleR[1] / 2, du[index][1] * nSampleR[1] / 2, du[index][1]),
+                calculator.myArrange(-du[index][0] * nSampleR[0] / 2, du[index][0] * nSampleR[0] / 2, du[index][0]))
         //lineDebugger.timeFactorTest()
         val u0 = u0v0[0]
         val v0 = u0v0[1]
@@ -733,6 +979,10 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val iRGB = reconstructInputData!!.getInt("iRGB")!!
         val arrayI = reconstructInputData.getMat1DArray("I")!!
         val nObj = reconstructInputData.getInt1DArray("nObj")!!
+        val crop_x = reconstructInputData.getInt("crop_x")!!
+        val crop_y = reconstructInputData.getInt("crop_y")!!
+        val index = reconstructInputData.getInt("index")!!
+
 
         val pupilShiftY: DoubleArray
         val pupilShiftX: DoubleArray
@@ -761,11 +1011,11 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val pup = arrayOfNulls<Mat>(2)
         pup[0] = reconstructInputData.getMat("P0")
         pup[1] = Mat.zeros(reconstructInputData.getMat("P0")!!.size(), CvType.CV_32F)
-        objR = reconstructInputData.getMat("O0")!!
-        objRComplex = arrayOfNulls(2)
-        objRComplex[0] = objR
-        objRComplex[1] = Mat.zeros(objR.size(), CvType.CV_32F) // add 0j to make complex number
-        val objF: Array<Mat?> = fourierTransformer.fftShift(fourierTransformer.fftShiftComplex(objRComplex)) // real, imaginary
+        objR[index] = reconstructInputData.getMat("O0")!!
+        objRComplex[index] = arrayOfNulls(2)
+        objRComplex[index][0] = objR[index]
+        objRComplex[index][1] = Mat.zeros(objR[index]!!.size(), CvType.CV_32F) // add 0j to make complex number
+        val objF: Array<Mat?> = fourierTransformer.fftShift(fourierTransformer.fftShiftComplex(objRComplex[index])) // real, imaginary
         val err = IntArray(reconstructInputData.getInt("maxIteration")!! + 1)
         for (i in err.indices) err[i] = 0
         var iteration: Int = -1
@@ -784,8 +1034,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         // Convert from 1 / um center to corresponding crop
         pupilShiftY = DoubleArray(nImg)
         pupilShiftX = DoubleArray(nImg)
-        for (i in 0 until nImg) pupilShiftY[i] = (freqUV!![i][1] * reconstructInputData.getDouble("con")!!).roundToInt().toDouble()
-        for (i in 0 until nImg) pupilShiftX[i] = (freqUV!![i][0] * reconstructInputData.getDouble("con")!!).roundToInt().toDouble()
+        for (i in 0 until nImg) pupilShiftY[i] = (freqUV!![index][i][1] * reconstructInputData.getDouble("con")!!).roundToInt().toDouble()
+        for (i in 0 until nImg) pupilShiftX[i] = (freqUV!![index][i][0] * reconstructInputData.getDouble("con")!!).roundToInt().toDouble()
         val yxMid = DoubleArray(2)
         val hfSz: Int
 
@@ -809,21 +1059,22 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
             temp[1] = tempIm
             objCrop[i] = temp
         }
-        orgResults = objR.clone()
+        orgResults[index] = objR[index]!!.clone()
         val elapsedFpmStartIt = System.currentTimeMillis() - startTime
         Log.e("elapsed(image iteration start): ", elapsedFpmStartIt.toString())
         message = handler.obtainMessage()
-
-        message?.arg1 = PROGRESS_3
-        handler.sendMessage(message!!)
-
+        if (index == parallelsize) {
+            message?.arg1 = PROGRESS_3
+            handler.sendMessage(message!!)
+        }
         // each iteration
         while (iteration < reconstructInputData.getInt("maxIteration")!!) {
-
-            message = handler.obtainMessage()
-            message?.arg1 = 0
-            message?.obj = "Iteration... " + (iteration + 1) + "/" + reconstructInputData.getInt("maxIteration")
-            handler.sendMessage(message!!)
+            if (index == parallelsize) {
+                message = handler.obtainMessage()
+                message?.arg1 = 0
+                message?.obj = "Iteration... " + (iteration + 1) + "/" + reconstructInputData.getInt("maxIteration")
+                handler.sendMessage(message!!)
+            }
 
             err2 = 0
             iteration += 1
@@ -869,11 +1120,11 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
                 // Objfup
                 when {
-                    ((dfi[ii] == 1) && ( illuminationNA[ii]<(NA*1.6))) -> {
+                    ((dfi[index][ii] == 1) && ( illuminationNA[index][ii]<(NA*1.6))) -> {
                         //println("exceptNum $ii")
                         objFUp = objFCropP
                     }
-                    dfi[ii] == 0 -> {
+                    dfi[index][ii] == 0 -> {
                         val add = arrayOfNulls<Mat>(2)
                         add[0] = Mat()
                         add[1] = Mat()
@@ -922,8 +1173,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
                         val c_m_update = Mat()
                         val updatedI = Mat()
-                        val index = ceil(ADAPTIVE_PERCENT * nSampleR[0] * nSampleR[1]).toInt()
-                        val lowThresholdVal = sorted_c_m[0, index][0]
+                        val index2 = ceil(ADAPTIVE_PERCENT * nSampleR[0] * nSampleR[1]).toInt()
+                        val lowThresholdVal = sorted_c_m[0, index2][0]
                         Imgproc.threshold(c_m, c_m_update, lowThresholdVal, Double.POSITIVE_INFINITY, Imgproc.THRESH_TOZERO)
                         Core.add(c_m_update, ObjcropPAbs, updatedI)
                         val add = arrayOfNulls<Mat>(2)
@@ -1110,13 +1361,14 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                 val idfted = fourierTransformer.ifftShiftComplex(fourierTransformer.ifftShift(res_pup_mul_complex))
                 objCrop[ii] = idfted
 
+//                if (index == parallelsize-1 && ii % 10 == 0) Runtime.getRuntime().gc() // garbage collecter
                 if (ii % 10 == 0) Runtime.getRuntime().gc() // garbage collecter
             }
 
             val t = System.currentTimeMillis()
             Log.d("elapsed:", (t - startTime).toString() + "")
 
-            objRComplex = fourierTransformer.ifftShiftComplex(fourierTransformer.ifftShift(objF))
+            objRComplex[index] = fourierTransformer.ifftShiftComplex(fourierTransformer.ifftShift(objF))
             Runtime.getRuntime().gc() // garbage collector
             Log.e("FPMFUNC", "|     $iteration'     |    -/-    |   $err2   |           |\n")
         }
@@ -1126,14 +1378,19 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val tmp_ObjAmp = Mat()
         val tmp_ObjAmp_0 = Mat()
         val tmp_ObjAmp_1 = Mat()
-        Core.pow(objRComplex[0], 2.0, tmp_ObjAmp_0)
-        Core.pow(objRComplex[1], 2.0, tmp_ObjAmp_1)
+        Core.pow(objRComplex[index][0], 2.0, tmp_ObjAmp_0)
+        Core.pow(objRComplex[index][1], 2.0, tmp_ObjAmp_1)
         Core.add(tmp_ObjAmp_0, tmp_ObjAmp_1, tmp_ObjAmp)
         Core.sqrt(tmp_ObjAmp, tmp_ObjAmp)
-        ampResults = tmp_ObjAmp.clone()
-
-        resObjPhase = myAngleComplex(objRComplex) // if green
-        phaseResult = resObjPhase
+        ampResults[index] = tmp_ObjAmp.clone()
+        var ampResultauto = tmp_ObjAmp.clone()
+        if(index == 0)
+        {
+            resObjPhase = myAngleComplex(objRComplex[index]) // if green
+            phaseResult = resObjPhase
+        }
+        var phaseResultauto = myAngleComplex(objRComplex[index]) // if green
+        saveImageauto(ampResultauto, phaseResultauto, crop_x, crop_y)
     }
 
     override fun myAngleComplex(mats: Array<Mat?>): Mat {

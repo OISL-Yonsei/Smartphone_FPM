@@ -35,7 +35,7 @@ class FileSaver {
                         val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(dest))
                         mediaScanIntent.data = Uri.fromFile(dest)
                         context.sendBroadcast(mediaScanIntent)
-                        Toast.makeText(context, "file saved", Toast.LENGTH_SHORT).show()
+//                        Toast.makeText(context, "file saved", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: IOException) {
                     Log.d("error", e.message + "Error")
