@@ -21,6 +21,7 @@ import com.lukael.oled_fpm.util.Calculator
 import com.lukael.oled_fpm.util.FileSaver
 import com.lukael.oled_fpm.util.FourierTransformer
 import com.lukael.oled_fpm.util.LineDebugger
+import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -50,7 +51,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
     /** thread messaging **/
     private var fullTask: Disposable ?= null // rxjava handling
-    private var fullTask2: Disposable ?= null // rxjava handling
+
     var message: Message? = null
     private var handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
@@ -67,7 +68,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
     // Sequence size
     private var parallelsize = 5
-//    private var sequencesize = 2
+    private var sequencesize = 10
 
     /** data for function input & output **/
     private var reconstructInputData = arrayOfNulls<HashmapData>(parallelsize)
@@ -134,8 +135,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
     private lateinit var root : File
 
     private var nStart = IntArray(2)
-    private var nStart_x = IntArray(parallelsize)
-    private var nStart_y = IntArray(parallelsize)
+    private var nStart_x = IntArray(sequencesize)
+    private var nStart_y = IntArray(sequencesize)
 
     //Requesting permission.
     private val permissions: Unit
@@ -158,7 +159,9 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
         initSettings() // settings (debugger, nImg and other things)
         loadimages()
-//        startFullTask_para() // thread processing & reconstructing
+        startFullTask_para() // thread processing & reconstructing
+        // ALL sequential code using for
+        /*
         for (i in 0 until parallelsize) {
             preProcessOutputData[0] = preProcessMono(0, nStart_x[i], nStart_y[i], 0)
             message = handler.obtainMessage()
@@ -178,6 +181,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         message?.arg1 = SHOW_RESULT
         message?.arg2 = 3
         handler.sendMessage(message!!)
+         */
     }
 
     override fun getPassedInfo() {
@@ -189,10 +193,10 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
             nStart[0] = nStartGiven[0]
             nStart[1] = nStartGiven[1]
         }
-        // Position caculator
-        for (i in 0 until parallelsize) {
+        // Position calculator
+        for (i in 0 until sequencesize) {
             nStart_x[i] = nStart[0] + (i * 200)
-            nStart_y[i] = nStart[1]
+            nStart_y[i] = nStart[1] + (i * 200)
         }
 
         // input and output filenames
@@ -325,7 +329,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         /** pre-process, configure, and reconstruct with RxJava threading **/
         // concat: execute threads in sequential order
         // zip : execute threads at once, and wait for all to finish
-        fullTask = Single.concat(
+        val fivetask1 = Single.concat(
                 // 1) preprocess
                 Single.zip(
                         Single.fromCallable {
@@ -333,37 +337,39 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                             false
                         }.subscribeOn(Schedulers.io()),
                         Single.fromCallable {
-                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[1], 1)
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[0], 1)
                             false
                         }.subscribeOn(Schedulers.io()),
                         Single.fromCallable {
-                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[2], 2)
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[0], 2)
                             false
                         }.subscribeOn(Schedulers.io()),
                         Single.fromCallable {
-                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[3], 3)
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[0], 3)
                             false
                         }.subscribeOn(Schedulers.io()),
                         Single.fromCallable {
-                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[4], 4)
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[0], 4)
                             false
                         }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
                         io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
                         .observeOn(AndroidSchedulers.mainThread())
                         .doOnSuccess {
@@ -372,7 +378,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                             handler.sendMessage(message!!)
                             message = handler.obtainMessage()
                             message?.arg1 = 0
-                            message?.obj = "Configuring Reconstruct..."
+                            message?.obj = "Configuring Reconstruct #1 ..."
                             handler.sendMessage(message!!)
                         },
                 // 2) configure reconstruction
@@ -397,22 +403,24 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                             reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
                             false
                         }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
                         io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
                         .observeOn(AndroidSchedulers.mainThread()),
                 // 3) reconstruct iterations
@@ -437,22 +445,913 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                             fpmFunc(reconstructInputData[4])
                             false
                         }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            fpmFunc(reconstructInputData[5])
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            fpmFunc(reconstructInputData[6])
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            fpmFunc(reconstructInputData[7])
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
-//                        Single.fromCallable {
-//                            fpmFunc(reconstructInputData[8])
-//                            false
-//                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask2 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[1], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[1], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[1], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[1], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[1], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #2 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask3 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[2], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[2], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[2], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[2], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[2], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #3 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask4 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[3], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[3], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[3], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[3], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[3], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #4 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask5 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[4], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[4], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[4], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[4], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[4], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #5 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+
+        val fivetask6 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[5], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[5], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[5], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[5], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[5], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #6 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask7 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[6], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[6], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[6], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[6], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[6], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #7 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
                         io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
                         .observeOn(AndroidSchedulers.mainThread())
                         .doOnSuccess {
@@ -466,7 +1365,482 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
                             message?.arg2 = 3
                             handler.sendMessage(message!!)
                         }
-        ).subscribe{}
+        )
+        val fivetask8 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[7], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[7], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[7], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[7], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[7], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #8 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask9 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[8], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[8], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[8], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[8], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[8], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #9 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+//                            orgObjAmp = orgResults[0]
+//                            resObjAmp = ampResults[0]
+//                            progress_layout.visibility = View.INVISIBLE
+//                            message = handler.obtainMessage()
+//                            message?.arg1 = SHOW_RESULT
+//                            message?.arg2 = 3
+//                            handler.sendMessage(message!!)
+                        }
+        )
+        val fivetask10 = Single.concat(
+                // 1) preprocess
+                Single.zip(
+                        Single.fromCallable {
+                            preProcessOutputData[0] = preProcessMono(0, nStart_x[0], nStart_y[9], 0)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[1] = preProcessMono(0, nStart_x[1], nStart_y[9], 1)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[2] = preProcessMono(0, nStart_x[2], nStart_y[9], 2)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[3] = preProcessMono(0, nStart_x[3], nStart_y[9], 3)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[4] = preProcessMono(0, nStart_x[4], nStart_y[9], 4)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            preProcessOutputData[5] = preProcessMono(0, nStart_x[5], nStart_y[5], 5)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[6] = preProcessMono(0, nStart_x[6], nStart_y[6], 6)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[7] = preProcessMono(0, nStart_x[7], nStart_y[7], 7)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            preProcessOutputData[8] = preProcessMono(0, nStart_x[8], nStart_y[8], 8)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            message = handler.obtainMessage()
+                            message?.arg1 = PROGRESS_2
+                            handler.sendMessage(message!!)
+                            message = handler.obtainMessage()
+                            message?.arg1 = 0
+                            message?.obj = "Configuring Reconstruct #10 ..."
+                            handler.sendMessage(message!!)
+                        },
+                // 2) configure reconstruction
+                Single.zip(
+                        Single.fromCallable {
+                            reconstructInputData[0] = configureReconstruct(preProcessOutputData[0]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[1] = configureReconstruct(preProcessOutputData[1]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[2] = configureReconstruct(preProcessOutputData[2]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[3] = configureReconstruct(preProcessOutputData[3]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[4] = configureReconstruct(preProcessOutputData[4]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            reconstructInputData[5] = configureReconstruct(preProcessOutputData[5]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[6] = configureReconstruct(preProcessOutputData[6]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[7] = configureReconstruct(preProcessOutputData[7]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            reconstructInputData[8] = configureReconstruct(preProcessOutputData[8]!!)
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread()),
+                // 3) reconstruct iterations
+                Single.zip(
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[0])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[1])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[2])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[3])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[4])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        /*
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[5])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[6])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[7])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                        Single.fromCallable {
+                            fpmFunc(reconstructInputData[8])
+                            false
+                        }.subscribeOn(Schedulers.io()),
+                         */
+                        io.reactivex.functions.Function5 { _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSuccess {
+                            // merge rgb
+//                            val colorCombiner = ColorCombiner()
+                            orgObjAmp = orgResults[0]
+                            resObjAmp = ampResults[0]
+                            progress_layout.visibility = View.INVISIBLE
+                            message = handler.obtainMessage()
+                            message?.arg1 = SHOW_RESULT
+                            message?.arg2 = 3
+                            handler.sendMessage(message!!)
+                        }
+        )
+
+//        val loadtask = Flowable.fromCallable {
+//            loadimages()
+//            false
+//        }
+//
+//        val fiveTasks = Flowable.zip(
+//                loadtask.subscribeOn(Schedulers.io()),
+//                fivetask1.subscribeOn(Schedulers.io()),
+//                fivetask2.subscribeOn(Schedulers.io()),
+//                fivetask3.subscribeOn(Schedulers.io()),
+//                fivetask4.subscribeOn(Schedulers.io()),
+//                fivetask5.subscribeOn(Schedulers.io()),
+//                io.reactivex.functions.Function6{ _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean?, _: Boolean? -> false }
+//        )
+
+        val patchTask = Flowable.concatArray(
+                fivetask1.subscribeOn(Schedulers.io()),
+                fivetask2.subscribeOn(Schedulers.io()),
+                fivetask3.subscribeOn(Schedulers.io()),
+                fivetask4.subscribeOn(Schedulers.io()),
+                fivetask5.subscribeOn(Schedulers.io()),
+                fivetask6.subscribeOn(Schedulers.io()),
+                fivetask7.subscribeOn(Schedulers.io()))
+//                fivetask8.subscribeOn(Schedulers.io()),
+//                fivetask9.subscribeOn(Schedulers.io()),
+//                fivetask10.subscribeOn(Schedulers.io()))
+//
+        fullTask = patchTask.subscribe{}
+//        fullTask = fiveTasks.subscribe{}
+
     }
 
     override fun changeProgressUI(progress: Int) {
@@ -1063,13 +2437,13 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val elapsedFpmStartIt = System.currentTimeMillis() - startTime
         Log.e("elapsed(image iteration start): ", elapsedFpmStartIt.toString())
         message = handler.obtainMessage()
-        if (index == parallelsize) {
+        if (index == parallelsize - 1) {
             message?.arg1 = PROGRESS_3
             handler.sendMessage(message!!)
         }
         // each iteration
         while (iteration < reconstructInputData.getInt("maxIteration")!!) {
-            if (index == parallelsize) {
+            if (index == parallelsize - 1) {
                 message = handler.obtainMessage()
                 message?.arg1 = 0
                 message?.obj = "Iteration... " + (iteration + 1) + "/" + reconstructInputData.getInt("maxIteration")
