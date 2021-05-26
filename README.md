@@ -32,8 +32,5 @@ This application requires the following permissions:
 - Camera capture and record.
 - Read and write access to external storage.
 
-## Citation
-If you find this project useful in your research, please consider citing our paper:
-
 ## Contact Us
 In case of any queries, please reach out to [Kyung Chul Lee]( lkc724@yonsei.ac.kr "E-mail") or [Jaewoo Jung]( lukael.jung@yonsei.ac.kr "E-mail")
