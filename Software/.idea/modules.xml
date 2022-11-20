@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/OLED_FPM.iml" filepath="$PROJECT_DIR$/OLED_FPM.iml" group="OLED_FPM" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="OLED_FPM/app" />
-      <module fileurl="file://$PROJECT_DIR$/jmatio/jmatio.iml" filepath="$PROJECT_DIR$/jmatio/jmatio.iml" group="OLED_FPM/jmatio" />
-      <module fileurl="file://$PROJECT_DIR$/opencv/opencv.iml" filepath="$PROJECT_DIR$/opencv/opencv.iml" group="OLED_FPM/opencv" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/OLED_FPM.iml" filepath="$PROJECT_DIR$/.idea/modules/OLED_FPM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/OLED_FPM.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/OLED_FPM.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/jmatio/OLED_FPM.jmatio.iml" filepath="$PROJECT_DIR$/.idea/modules/jmatio/OLED_FPM.jmatio.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/opencv/OLED_FPM.opencv.iml" filepath="$PROJECT_DIR$/.idea/modules/opencv/OLED_FPM.opencv.iml" />
     </modules>
   </component>
 </project>

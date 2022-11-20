@@ -103,7 +103,7 @@ class SelectImageSetActivity : AppCompatActivity() {
                     MediaStore.Images.Media.SIZE)
             imageCursor = managedQuery(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                     proj, null, null,
-                    MediaStore.Images.Media._ID + " COLLATE LOCALIZED DESC") // 최신순으로 가져오기
+                    MediaStore.Images.Media._ID + " ASC") // 최신순으로 가져오기
             if (imageCursor != null && imageCursor!!.moveToFirst()) {
                 var thumbsID: String
                 var thumbsImageID: String?
