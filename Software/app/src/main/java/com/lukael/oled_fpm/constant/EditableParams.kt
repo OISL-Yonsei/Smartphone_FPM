@@ -1,7 +1,5 @@
 package com.lukael.oled_fpm.constant
 
-import org.opencv.core.Scalar
-
 /** system_parameter.py **/
 val fileTypes = arrayOf("r_", "g_", "b_")
 val wavelengths = listOf(0.518, 0.4764, 0.6244) // first one is used for mono

@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import com.lukael.oled_fpm.R
+import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureOptionActivity
 import kotlinx.android.synthetic.main.activity_focus.*
 import kotlin.math.sqrt
 

@@ -20,6 +20,7 @@ import android.util.Log
 import android.util.Size
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureMode
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -223,8 +224,8 @@ class CameraControllerV2WithoutPreview(private val context: Context,
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
-    fun takePicture(cnt: Int, exp: Long, reconstructMode: Int, rgbIter: Int): File? {
-        file = getOutputMediaFile(cnt, reconstructMode, rgbIter)
+    fun takePicture(cnt: Int, exp: Long, captureMode: CaptureMode, rgbIter: Int): File? {
+        file = getOutputMediaFile(cnt, captureMode, rgbIter)
         try {
             if (null == mCameraDevice) {
                 // return null;
@@ -292,11 +293,11 @@ class CameraControllerV2WithoutPreview(private val context: Context,
             val buffer = mImage.planes[0].buffer
             val bytes = ByteArray(buffer.remaining())
 
-            // 가로채?? ?�버�? 보내?? 코드
+            // 가로채?? ?�버�? 보내?? 코드
             buffer[bytes]
             mImage.close()
 
-            // ?�??
+            // ?�??
             try {
                 // file
                 val output = FileOutputStream(mFile!!)
@@ -316,7 +317,7 @@ class CameraControllerV2WithoutPreview(private val context: Context,
         }
     }
 
-    private fun getOutputMediaFile(cnt: Int, reconstructMode: Int, rgbIter: Int): File? {
+    private fun getOutputMediaFile(cnt: Int, captureMode: CaptureMode, rgbIter: Int): File? {
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
         val mediaStorageDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "OLED_FPM")
@@ -335,7 +336,7 @@ class CameraControllerV2WithoutPreview(private val context: Context,
         if (cnt == 0) {
             timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         }
-        mediaFile = if (reconstructMode == 0) {
+        mediaFile = if (captureMode == CaptureMode.MonoReconstruction) { // TODO
             File(
                     mediaStorageDir.path + File.separator + "IMG_mono_" +
                             timeStamp + "_" + String.format("%02d",diaLed) + "_" + cnt.toString().padStart(3, '0')  + ".jpg")

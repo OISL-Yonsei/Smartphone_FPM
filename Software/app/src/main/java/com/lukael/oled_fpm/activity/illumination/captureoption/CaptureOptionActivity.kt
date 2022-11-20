@@ -5,34 +5,55 @@
  * @modify date 2019-12-10 21:48:32
  * @desc Setting main function
  */
-package com.lukael.oled_fpm.activity.illumination
+package com.lukael.oled_fpm.activity.illumination.captureoption
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import com.lukael.oled_fpm.R
+import com.lukael.oled_fpm.activity.illumination.IlluminationActivity
 import com.lukael.oled_fpm.model.CaptureSetting
 import kotlinx.android.synthetic.main.action_bar.*
 import kotlinx.android.synthetic.main.activity_captureoption.*
 
 class CaptureOptionActivity : AppCompatActivity() {
-    private var captureSetting = CaptureSetting(
-            3, 20, 35, 200000, 878, 678, 24,1, 0,0)
+    private val viewModel: CaptureOptionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_captureoption)
+        initView()
+    }
+
+    private fun initView() {
         supportActionBar!!.displayOptions = ActionBar.DISPLAY_SHOW_CUSTOM
         supportActionBar!!.setCustomView(R.layout.action_bar)
 
-        start_mono_button.setOnClickListener{ startCaptureActivity(0) }
-        start_rgb_button.setOnClickListener{ startCaptureActivity(1) }
+        start_recon_button.setOnClickListener{
+            val captureMode = viewModel.captureModeLiveData.value
+            if (captureMode == null) Toast.makeText(this, "Select Capture Mode.", Toast.LENGTH_SHORT).show()
+            else startCaptureActivity(captureMode)
+        }
         back_button.setOnClickListener { finish() }
+
+        tv_capture_mode.setAdapter(ArrayAdapter(this, R.layout.item_capture_mode, CaptureMode.values().map { it.displayName }))
+        tv_capture_mode.onItemClickListener = object: AdapterView.OnItemClickListener {
+            override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val mode = CaptureMode.values()[position]
+                viewModel.setCaptureMode(mode)
+            }
+        }
     }
 
-    private fun startCaptureActivity(reconstructMode: Int) {
+    private fun startCaptureActivity(captureMode: CaptureMode) {
         val intent = Intent(applicationContext, IlluminationActivity::class.java)
+        val captureSetting = CaptureSetting.Default // TODO: default 를 고정으로 묶어서 안전하게 관리
 
         // Get setting data
         if (editText_row.text.isNotEmpty()) captureSetting.dotsInRow = editText_row.text.toString().toInt()
@@ -53,10 +74,10 @@ class CaptureOptionActivity : AppCompatActivity() {
             R.id.capture_radio_uniform -> captureSetting.illuminationMode = 1
             R.id.capture_radio_non_uniform -> captureSetting.illuminationMode = 2
         }
-        captureSetting.reconstructMode = reconstructMode
+        captureSetting.captureMode = captureMode
 
         // Transfer to next activity
-        intent.putExtra("capture_setting", captureSetting)
+        intent.putExtra(IlluminationActivity.CAPTURE_SETTING, captureSetting)
         startActivity(intent)
         overridePendingTransition(0, 0)
         finish()

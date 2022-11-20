@@ -26,6 +26,7 @@ android {
 }
 
 dependencies {
+    implementation 'com.google.android.material:material:1.7.0'
     def camerax_version = '1.0.0-alpha06'
     implementation "androidx.camera:camera-core:${camerax_version}"
     implementation "androidx.camera:camera-camera2:${camerax_version}"
@@ -57,6 +58,9 @@ dependencies {
     implementation "androidx.cardview:cardview:1.0.0"
     implementation "androidx.core:core-ktx:1.9.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    // lifecycle
+    implementation 'androidx.fragment:fragment-ktx:1.5.4'
 }
 repositories {
     mavenCentral()

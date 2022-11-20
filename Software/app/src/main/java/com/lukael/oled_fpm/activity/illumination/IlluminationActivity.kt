@@ -25,9 +25,11 @@ import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.lukael.oled_fpm.R
+import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureMode
 import com.lukael.oled_fpm.activity.reconstruct.ConfirmActivity
 import com.lukael.oled_fpm.camera.CameraControllerV2WithoutPreview
 import com.lukael.oled_fpm.model.CaptureSetting
+import kotlinx.android.synthetic.main.action_bar_no_backbutton.*
 import java.io.File
 import java.lang.Math.pow
 import java.util.*
@@ -55,7 +57,8 @@ class IlluminationActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN) // no status bar
+        supportActionBar?.hide()
+        toolbar_title
 
         initSettings() // 1) get capture settings & check permissions
         makePosList() // 2) Generate point grid (xPosList and yPosList)
@@ -143,7 +146,7 @@ class IlluminationActivity : AppCompatActivity() {
     // 3)
     private fun initCamera(){
         // initialize camera
-        val rgbMaxIter = if (captureSetting.reconstructMode == 1) 3 else 1 // take rgb or only r|g|b
+        val rgbMaxIter = if (captureSetting.captureMode == CaptureMode.RGBReconstruction) 3 else 1 // take rgb or only r|g|b
         ccv2WithoutPreview = CameraControllerV2WithoutPreview(applicationContext, rgbMaxIter * posList.size + 1, captureSetting.dotsInRow-1)
         ccv2WithoutPreview.openCamera()
         Log.d("picture # to be taken", (captureSetting.dotsInRow * captureSetting.dotsInRow + 1).toString())
@@ -179,7 +182,7 @@ class IlluminationActivity : AppCompatActivity() {
 
             // check if done capturing
             if (step == posList.size + 1) { // if there is next color
-                if (captureSetting.reconstructMode == 1 && rgbIter < 2) {
+                if (captureSetting.captureMode == CaptureMode.RGBReconstruction && rgbIter < 2) { // FIXME
                     rgbIter++
                     step = 1
                 } else { // if done capturing
@@ -201,7 +204,7 @@ class IlluminationActivity : AppCompatActivity() {
                     dotStatus.distance=(captureSetting.sampleheight.toDouble()*0.3).toFloat()
 
                 }
-                captureSetting.reconstructMode == 0 -> { // mono
+                captureSetting.captureMode == CaptureMode.MonoReconstruction -> { // FIXME
                     dotStatus.color = colors[captureSetting.colorCode]
                     dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
                     dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
@@ -238,7 +241,7 @@ class IlluminationActivity : AppCompatActivity() {
                     exposureTime_var = exposureTime_var / 6
                 }
                 // make capture and save as file
-                val file: File = ccv2WithoutPreview.takePicture(step, exposureTime_var, captureSetting.reconstructMode, rgbIter)!!
+                val file: File = ccv2WithoutPreview.takePicture(step, exposureTime_var, captureSetting.captureMode, rgbIter)!!
                 val fName = file.absolutePath
 
                 // select 0th file for scanning
@@ -280,5 +283,9 @@ class IlluminationActivity : AppCompatActivity() {
     override fun finish() {
         super.finish()
         overridePendingTransition(0, R.anim.fade_out)
+    }
+
+    companion object {
+        const val CAPTURE_SETTING = "capture_setting"
     }
 }
