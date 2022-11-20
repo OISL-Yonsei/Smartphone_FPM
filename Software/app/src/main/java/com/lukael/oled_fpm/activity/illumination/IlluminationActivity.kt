@@ -146,7 +146,7 @@ class IlluminationActivity : AppCompatActivity() {
     // 3)
     private fun initCamera(){
         // initialize camera
-        val rgbMaxIter = if (captureSetting.captureMode == CaptureMode.RGBReconstruction) 3 else 1 // take rgb or only r|g|b
+        val rgbMaxIter = if (captureSetting.captureMode == CaptureMode.ReconstructionRGB) 3 else 1 // take rgb or only r|g|b
         ccv2WithoutPreview = CameraControllerV2WithoutPreview(applicationContext, rgbMaxIter * posList.size + 1, captureSetting.dotsInRow-1)
         ccv2WithoutPreview.openCamera()
         Log.d("picture # to be taken", (captureSetting.dotsInRow * captureSetting.dotsInRow + 1).toString())
@@ -182,7 +182,7 @@ class IlluminationActivity : AppCompatActivity() {
 
             // check if done capturing
             if (step == posList.size + 1) { // if there is next color
-                if (captureSetting.captureMode == CaptureMode.RGBReconstruction && rgbIter < 2) { // FIXME
+                if (captureSetting.captureMode == CaptureMode.ReconstructionRGB && rgbIter < 2) { // FIXME
                     rgbIter++
                     step = 1
                 } else { // if done capturing
@@ -204,7 +204,7 @@ class IlluminationActivity : AppCompatActivity() {
                     dotStatus.distance=(captureSetting.sampleheight.toDouble()*0.3).toFloat()
 
                 }
-                captureSetting.captureMode == CaptureMode.MonoReconstruction -> { // FIXME
+                captureSetting.captureMode == CaptureMode.ReconstructionMono -> { // FIXME
                     dotStatus.color = colors[captureSetting.colorCode]
                     dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
                     dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)

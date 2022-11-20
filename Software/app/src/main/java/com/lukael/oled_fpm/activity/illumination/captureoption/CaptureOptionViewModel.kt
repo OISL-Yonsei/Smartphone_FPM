@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 
 class CaptureOptionViewModel: ViewModel() {
     val captureModeLiveData: LiveData<CaptureMode?> get() = _captureModeLiveData
-    private val _captureModeLiveData = MutableLiveData(CaptureMode.MonoReconstruction)
+    private val _captureModeLiveData = MutableLiveData<CaptureMode?>(null)
 
     fun setCaptureMode(mode: CaptureMode?) {
         _captureModeLiveData.value = mode

@@ -336,7 +336,7 @@ class CameraControllerV2WithoutPreview(private val context: Context,
         if (cnt == 0) {
             timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         }
-        mediaFile = if (captureMode == CaptureMode.MonoReconstruction) { // TODO
+        mediaFile = if (captureMode == CaptureMode.ReconstructionMono) { // TODO
             File(
                     mediaStorageDir.path + File.separator + "IMG_mono_" +
                             timeStamp + "_" + String.format("%02d",diaLed) + "_" + cnt.toString().padStart(3, '0')  + ".jpg")

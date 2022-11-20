@@ -1,13 +1,12 @@
 package com.lukael.oled_fpm.model
 
 import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureMode
-import java.io.File
 import java.io.Serializable
-import java.util.ArrayList
 
 class CaptureSetting(
     var dotsInRow: Int,
     var dotRadius: Int,
+    var dotInnerRadius: Int,
     var stepSize: Int,
     var exposureTime: Long,
     var centerX: Int,
@@ -21,6 +20,7 @@ class CaptureSetting(
         val Default = CaptureSetting(
             3,
             20,
+            10,
             35,
             200000,
             878,
@@ -28,7 +28,7 @@ class CaptureSetting(
             24,
             1,
             0,
-            CaptureMode.MonoReconstruction
+            CaptureMode.ReconstructionMono
         )
     }
 }
