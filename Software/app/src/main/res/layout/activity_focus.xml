@@ -1,140 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/full_area"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#ffffff">
-    <LinearLayout
-        android:id="@+id/full_area"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/background_area"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="0dp"
+        android:layout_weight="3"
+        android:background="#00ff00" />
 
-        <ImageView
-            android:id="@+id/background_area"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="3"
-            android:background="#00ff00" />
-
-        <FrameLayout
-            android:id="@+id/bottom_area"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="2">
-            <SurfaceView
-                android:id="@+id/focus_preview"
-                android:layout_height="match_parent"
-                android:layout_width="match_parent"
-                android:layout_gravity="center">
-            </SurfaceView>
-        </FrameLayout>
-    </LinearLayout>
-
-    <FrameLayout
-        android:id="@+id/grid_area"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottom_area"
         android:layout_width="match_parent"
-        android:layout_height="277dp"
-        android:layout_gravity="bottom|end">
-
+        android:layout_height="0dp"
+        android:layout_weight="2">
+        <SurfaceView
+            android:id="@+id/focus_preview"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+        </SurfaceView>
         <SurfaceView
             android:id="@+id/grid"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
             android:background="#00FFFFFF" />
-    </FrameLayout>
 
-    <FrameLayout
-        android:id="@+id/back_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|start"
-        android:layout_margin="20dp"
-        android:background="@drawable/button_background"
-        android:onClick="onBackButtonClicked"
-        android:src="@drawable/back_button"
-        android:textColor="@android:color/white">
-        <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:src="@drawable/back_button"/>
-    </FrameLayout>
-    <Button
-        android:id="@+id/confirm_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="OK"
-        android:textColor="@android:color/white" />
-    <Button
-        android:id="@+id/zoom_in_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="150dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="+"
-        android:textColor="@android:color/white" />
-    <Button
-        android:id="@+id/zoom_out_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="100dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="-"
-        android:textColor="@android:color/white" />
-    <Button
-        android:id="@+id/red_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="350dp"
-        android:layout_marginBottom="220dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="R"
-        android:textColor="@android:color/white" />
-    <Button
-        android:id="@+id/green_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="350dp"
-        android:layout_marginBottom="170dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="G"
-        android:textColor="@android:color/white" />
-    <Button
-        android:id="@+id/blue_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="350dp"
-        android:layout_marginBottom="120dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="B"
-        android:textColor="@android:color/white" />
-    <Button
-        android:id="@+id/white_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="350dp"
-        android:layout_marginBottom="70dp"
-        android:background="@drawable/button_background"
-        android:textSize="15sp"
-        android:text="W"
-        android:textColor="@android:color/white" />
-</FrameLayout>
+        <FrameLayout
+            android:id="@+id/back_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="20dp"
+            android:background="@drawable/button_background"
+            android:onClick="onBackButtonClicked"
+            android:src="@drawable/back_button"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:textColor="@android:color/white">
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:src="@drawable/back_button"/>
+        </FrameLayout>
+        <Button
+            android:id="@+id/confirm_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="20dp"
+            android:background="@drawable/button_background"
+            android:textSize="15sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="OK"
+            android:textColor="@android:color/white" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="@id/confirm_button"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:orientation="vertical">
+            <Button
+                android:id="@+id/zoom_in_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/button_background"
+                android:textSize="15sp"
+                app:layout_constraintStart_toStartOf="parent"
+                android:text="+"
+                android:textColor="@android:color/white" />
+            <Button
+                android:id="@+id/zoom_out_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_background"
+                android:textSize="15sp"
+                app:layout_constraintStart_toStartOf="parent"
+                android:text="-"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+        <Button
+            android:id="@+id/red_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/button_background"
+            android:textSize="15sp"
+            android:layout_marginBottom="10dp"
+            app:layout_constraintStart_toStartOf="@id/back_button"
+            app:layout_constraintBottom_toTopOf="@id/green_button"
+            android:text="R"
+            android:textColor="@android:color/white" />
+        <Button
+            android:id="@+id/green_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/button_background"
+            android:textSize="15sp"
+            android:layout_marginBottom="10dp"
+            app:layout_constraintStart_toStartOf="@id/back_button"
+            app:layout_constraintBottom_toTopOf="@id/blue_button"
+            android:text="G"
+            android:textColor="@android:color/white" />
+        <Button
+            android:id="@+id/blue_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/button_background"
+            android:textSize="15sp"
+            android:layout_marginBottom="10dp"
+            app:layout_constraintStart_toStartOf="@id/back_button"
+            app:layout_constraintBottom_toTopOf="@id/white_button"
+            android:text="B"
+            android:textColor="@android:color/white" />
+        <Button
+            android:id="@+id/white_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/button_background"
+            android:textSize="15sp"
+            android:layout_marginBottom="10dp"
+            app:layout_constraintStart_toStartOf="@id/back_button"
+            app:layout_constraintBottom_toTopOf="@id/back_button"
+            android:text="W"
+            android:textColor="@android:color/white" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
