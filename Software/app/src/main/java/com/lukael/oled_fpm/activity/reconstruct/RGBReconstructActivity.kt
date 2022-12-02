@@ -372,12 +372,12 @@ class RGBReconstructActivity : AppCompatActivity(), ReconstructActivity {
         val cropImages = arrayOfNulls<Mat>(nImg)
 
         // distortion value
-        var distValue = floatArrayOf(0.0313690384695265F, -0.00126679968152714F, 0F, 0F)
-        var distMat = Mat(1, 4, CvType.CV_32F)
+        val distValue = floatArrayOf(0.0313690384695265F, -0.00126679968152714F, 0F, 0F)
+        val distMat = Mat(1, 4, CvType.CV_32F)
         distMat.put(0, 0, distValue);
 
-        var mtxValue = floatArrayOf(688.015419803622F, 0F, 1595.36915351398F, 0F, 688.013187402952F, 1215.45121729576F, 0F, 0F, 1F)
-        var mtxMat = Mat(3, 3, CvType.CV_32F)
+        val mtxValue = floatArrayOf(688.015419803622F, 0F, 1595.36915351398F, 0F, 688.013187402952F, 1215.45121729576F, 0F, 0F, 1F)
+        val mtxMat = Mat(3, 3, CvType.CV_32F)
         mtxMat.put(0, 0, mtxValue);
 
         // read in all images into the memory first

@@ -89,6 +89,7 @@ class CaptureOptionActivity : AppCompatActivity() {
         // Get setting data
         if (editText_row.text.isNotEmpty()) captureSetting.dotsInRow = editText_row.text.toString().toInt()
         if (editText_radius.text.isNotEmpty()) captureSetting.dotRadius = editText_radius.text.toString().toInt()
+        if (editText_inner_radius.text.isNotEmpty()) captureSetting.dotInnerRadius = editText_inner_radius.text.toString().toInt()
         if (editText_step.text.isNotEmpty()) captureSetting.stepSize = editText_step.text.toString().toInt()
         if (editText_exp.text.isNotEmpty()) captureSetting.exposureTime = editText_exp.text.toString().toLong()
         if (editText_center_x.text.isNotEmpty()) captureSetting.centerX = editText_center_x.text.toString().toInt()

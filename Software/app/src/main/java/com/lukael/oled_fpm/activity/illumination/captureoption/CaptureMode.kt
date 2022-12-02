@@ -48,7 +48,10 @@ enum class CaptureMode(val displayName: String, val requiredOptions: List<Captur
         CaptureSettingType.StepSize,
         CaptureSettingType.ExposureTime,
         CaptureSettingType.UniformType
-    )),
+    ));
+
+    val isReconstructMode get() = this == ReconstructionRGB || this == ReconstructionMono
+    val isCaptureMode get() = this == CaptureBrightField || this == CaptureDarkField || this == CapturePhase
 }
 
 enum class CaptureSettingType {

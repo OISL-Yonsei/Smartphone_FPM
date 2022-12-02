@@ -8,6 +8,8 @@
 package com.lukael.oled_fpm.activity.illumination
 
 import android.Manifest
+import android.R.attr.centerX
+import android.R.attr.centerY
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -15,6 +17,7 @@ import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.net.Uri
@@ -30,7 +33,6 @@ import com.lukael.oled_fpm.camera.CameraControllerV2WithoutPreview
 import com.lukael.oled_fpm.model.CaptureSetting
 import kotlinx.android.synthetic.main.action_bar_no_backbutton.*
 import java.io.File
-import java.lang.Math.pow
 import java.util.*
 import kotlin.math.*
 
@@ -40,7 +42,7 @@ class IlluminationActivity : AppCompatActivity() {
     lateinit var captureSetting: CaptureSetting // capture setting passed from before activity
 
     // xpos and ypos list for illumination dots
-    inner class Pos(val xPos: Float, val yPos : Float, val radius : Float)
+    inner class Pos(val xPos: Float, val yPos : Float, val radius : Float, val innerRadius: Float = 0f)
     var posList = ArrayList<Pos>()
 
     private var firstFileToScan: String? = null // 0th file name, for passing
@@ -142,8 +144,16 @@ class IlluminationActivity : AppCompatActivity() {
                     }
                 }
             }
-            CaptureMode.CaptureBrightField, CaptureMode.CaptureDarkField, CaptureMode.CapturePhase -> {
+            CaptureMode.CaptureBrightField -> {
                 posList.add(Pos(0f, 0f, captureSetting.dotRadius.toFloat()))
+            }
+            CaptureMode.CaptureDarkField -> {
+                posList.add(Pos(0f, 0f, captureSetting.dotRadius.toFloat(), captureSetting.dotInnerRadius.toFloat()))
+            }
+            CaptureMode.CapturePhase -> {
+                val pos = Pos(0f, 0f, captureSetting.dotRadius.toFloat())
+                posList.add(pos)
+                posList.add(pos)
             }
         }
     }
@@ -161,18 +171,20 @@ class IlluminationActivity : AppCompatActivity() {
     internal inner class MyView(context: Context?) : View(context) {
         // current information initialization
         private val colors = intArrayOf(Color.RED, Color.GREEN, Color.BLUE, Color.WHITE)
-        private var paint = Paint()
-        private var step = 0 // step in r|g|b each
+        private var paint1 = Paint()
+        private var paint2 = Paint()
+        private var step = if (captureSetting.captureMode.isReconstructMode) 0 else 1 // step in r|g|b each
         private var iterCount = 0 //
         private var rgbIter = 0 // r(0) -> g(1) -> b(2)
         var exposureTime_var = captureSetting.exposureTime
 
-        inner class DotStatus (var color : Int, var cx : Float, var cy : Float, var radius : Float, var distance : Float)
+        inner class DotStatus (var color : Int, var cx : Float, var cy : Float, var radius : Float, var innerRadius: Float, var distance : Float)
         private var dotStatus = DotStatus (
                 colors[3],
                 captureSetting.centerX.toFloat(),
                 captureSetting.centerY.toFloat(),
                 200f,
+            0f,
                 0f) // initialization (white big dot)
 
         // change illumination in canvas onDraw
@@ -187,7 +199,7 @@ class IlluminationActivity : AppCompatActivity() {
 
             // check if done capturing
             if (step == posList.size + 1) { // if there is next color
-                if (captureSetting.captureMode == CaptureMode.ReconstructionRGB && rgbIter < 2) { // FIXME
+                if (captureSetting.captureMode == CaptureMode.ReconstructionRGB && rgbIter < 2) {
                     rgbIter++
                     step = 1
                 } else { // if done capturing
@@ -196,40 +208,92 @@ class IlluminationActivity : AppCompatActivity() {
                 }
             }
 
-            // if in iteration
-            else when {
-                step == 0 -> { // first : white big dot
-                    dotStatus.color = colors[3]
+            // draw dot with setting
+
+            else when (captureSetting.captureMode) {
+                CaptureMode.CaptureBrightField -> {
+                    dotStatus.color = colors[captureSetting.colorCode]
                     dotStatus.cx = captureSetting.centerX.toFloat()
                     dotStatus.cy = captureSetting.centerY.toFloat()
-                    dotStatus.radius = 200f
-                    //dotStatus.distance = 0f
-                    //var pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
-                    //dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
-                    dotStatus.distance=(captureSetting.sampleheight.toDouble()*0.3).toFloat()
+                    dotStatus.radius = posList[0].radius
+                    // dotStatus.distance는 사용되지 않는 값
 
+                    paint1.color = dotStatus.color
+                    canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.radius, paint1)
                 }
-                captureSetting.captureMode == CaptureMode.ReconstructionMono -> { // FIXME
+                CaptureMode.CaptureDarkField -> {
                     dotStatus.color = colors[captureSetting.colorCode]
-                    dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
-                    dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
-                    dotStatus.radius = posList[step - 1].radius
-                    val pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
-                    dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
+                    dotStatus.cx = captureSetting.centerX.toFloat()
+                    dotStatus.cy = captureSetting.centerY.toFloat()
+                    dotStatus.radius = posList[0].radius
+                    dotStatus.innerRadius = posList[0].innerRadius
+                    // dotStatus.distance는 사용되지 않는 값
+
+                    paint1.color = dotStatus.color
+                    paint2.color = Color.BLACK
+                    canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.radius, paint1)
+                    canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.innerRadius, paint2)
                 }
-                else -> { // rgb
-                    dotStatus.color = colors[rgbIter]
-                    dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
-                    dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
-                    dotStatus.radius = posList[step - 1].radius
-                    val pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
-                    dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
+                CaptureMode.CapturePhase -> {
+                    dotStatus.color = colors[captureSetting.colorCode]
+                    dotStatus.cx = captureSetting.centerX.toFloat()
+                    dotStatus.cy = captureSetting.centerY.toFloat()
+                    dotStatus.radius = posList[0].radius
+                    // dotStatus.distance는 사용되지 않는 값
+
+                    paint1.color = dotStatus.color
+                    val rectF = RectF()
+                    rectF.set(
+                        dotStatus.cx - dotStatus.radius,
+                        dotStatus.cy - dotStatus.radius,
+                        dotStatus.cx + dotStatus.radius,
+                        dotStatus.cy + dotStatus.radius
+                    )
+
+                    if (step == 1) canvas.drawArc(rectF, 90f, 180f, true, paint1) // left half
+                    if (step == 2) canvas.drawArc(rectF, -90f, 180f, true, paint1) // right half
+                }
+                CaptureMode.ReconstructionMono, CaptureMode.ReconstructionRGB -> {
+                    when (step) {
+                        0 -> { // first : white big dot
+                            dotStatus.color = colors[3]
+                            dotStatus.cx = captureSetting.centerX.toFloat()
+                            dotStatus.cy = captureSetting.centerY.toFloat()
+                            dotStatus.radius = 200f
+                            //dotStatus.distance = 0f
+                            //var pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
+                            //dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
+                            dotStatus.distance =
+                                (captureSetting.sampleheight.toDouble() * 0.3).toFloat()
+
+                            paint1.color = dotStatus.color
+                            canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.radius, paint1)
+                        }
+                        else -> {
+                            dotStatus.color = colors[captureSetting.colorCode]
+                            dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
+                            dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
+                            dotStatus.radius = posList[step - 1].radius
+                            val pointDist = hypot(
+                                (dotStatus.cx - captureSetting.centerX).toDouble(),
+                                (dotStatus.cy - captureSetting.centerY).toDouble()
+                            )
+                            dotStatus.distance = hypot(
+                                pointDist * 0.0486,
+                                captureSetting.sampleheight.toDouble()
+                            ).toFloat()
+
+                            paint1.color = dotStatus.color
+                            canvas.drawCircle(
+                                dotStatus.cx,
+                                dotStatus.cy,
+                                dotStatus.radius,
+                                paint1
+                            )
+                        }
+                    }
                 }
             }
-
-            // draw dot with setting
-            paint.color = dotStatus.color
-            canvas.drawCircle( dotStatus.cx, dotStatus.cy, dotStatus.radius, paint)
 
             // iteration
             if (iterCount > 0 && iterCount % 3 == 0) {
@@ -243,24 +307,32 @@ class IlluminationActivity : AppCompatActivity() {
 //                exposureTime_var = (captureSetting.exposureTime * pow(dotStatus.distance.toDouble()/captureSetting.sampleheight,2.0)).toLong()
                 exposureTime_var = captureSetting.exposureTime
                 if (step==0) {
-                    exposureTime_var = exposureTime_var / 6
+                    exposureTime_var /= 6
                 }
-                // make capture and save as file
-                val file: File = ccv2WithoutPreview.takePicture(step, exposureTime_var, captureSetting.captureMode, rgbIter)!!
-                val fName = file.absolutePath
 
-                // select 0th file for scanning
-                val endString = fName.substring(fName.length - 8)
-                val compString = "_000.jpg"
-                if (endString == compString) firstFileToScan = fName // scan only 0th file
-                Log.d("file path", file.absolutePath)
+                if (captureSetting.captureMode.isReconstructMode) {
+                    // make capture and save as file
+                    val file: File = ccv2WithoutPreview.takePicture(
+                        step,
+                        exposureTime_var,
+                        captureSetting.captureMode,
+                        rgbIter
+                    )!!
+                    val fName = file.absolutePath
+
+                    // select 0th file for scanning
+                    val endString = fName.substring(fName.length - 8)
+                    val compString = "_000.jpg"
+                    if (endString == compString) firstFileToScan = fName // scan only 0th file
+                    Log.d("file path", file.absolutePath)
+                }
 
                 step++ // iterate
             }
             iterCount++ // iterate
 
             // if in capture iteration
-            try { Thread.sleep(exposureTime_var/1000+400) } catch (e: InterruptedException) {} // delay for finishing capturing
+            try { Thread.sleep(exposureTime_var/1000+400) } catch (_: InterruptedException) {} // delay for finishing capturing
             this.postInvalidate() // screen update
         }
     }
