@@ -310,21 +310,24 @@ class IlluminationActivity : AppCompatActivity() {
                     exposureTime_var /= 6
                 }
 
-                if (captureSetting.captureMode.isReconstructMode) {
-                    // make capture and save as file
-                    val file: File = ccv2WithoutPreview.takePicture(
-                        step,
-                        exposureTime_var,
-                        captureSetting.captureMode,
-                        rgbIter
-                    )!!
-                    val fName = file.absolutePath
+                // make capture and save as file
+                val file: File = ccv2WithoutPreview.takePicture(
+                    step,
+                    exposureTime_var,
+                    captureSetting.captureMode,
+                    rgbIter
+                )!!
+                val fName = file.absolutePath
 
+                if (captureSetting.captureMode.isReconstructMode) {
                     // select 0th file for scanning
                     val endString = fName.substring(fName.length - 8)
                     val compString = "_000.jpg"
                     if (endString == compString) firstFileToScan = fName // scan only 0th file
-                    Log.d("file path", file.absolutePath)
+                    Log.d("reconstruction - file path", file.absolutePath)
+                } else {
+                    if (step == 1) firstFileToScan = fName
+                    Log.d("capture - file path", file.absolutePath)
                 }
 
                 step++ // iterate
@@ -349,12 +352,20 @@ class IlluminationActivity : AppCompatActivity() {
 
     // go to activity which asks for reconstruction
     fun goToNextActivity() {
-        setContentView(R.layout.activity_illumination)
-        val i = Intent(applicationContext, ConfirmActivity::class.java)
-        i.putExtra("filepath", firstFileToScan) // 0th file name
-        startActivity(i)
-        overridePendingTransition(0, R.anim.fade_out)
-        finish()
+        setContentView(R.layout.activity_illumination) // TODO: check if this is needed?
+        if (captureSetting.captureMode.isReconstructMode) {
+            val i = Intent(applicationContext, ConfirmActivity::class.java)
+            i.putExtra("filepath", firstFileToScan) // 0th file name
+            startActivity(i)
+            overridePendingTransition(0, R.anim.fade_out)
+            finish()
+        } else {
+            val i = Intent(applicationContext, ConfirmActivity::class.java)
+            i.putExtra("filepath", firstFileToScan) // 0th file name
+            startActivity(i)
+            overridePendingTransition(0, R.anim.fade_out)
+            finish()
+        }
     }
 
     override fun finish() {

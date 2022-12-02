@@ -321,6 +321,7 @@ class CameraControllerV2WithoutPreview(private val context: Context,
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
         val mediaStorageDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "OLED_FPM")
+        val cacheDir = context.cacheDir
 
         // This location works best if you want the created images to be shared
         // between applications and persist after your app has been uninstalled.
@@ -331,25 +332,63 @@ class CameraControllerV2WithoutPreview(private val context: Context,
                 return null
             }
         }
-        val mediaFile: File
         // Create a media file name
         if (cnt == 0) {
             timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         }
-        mediaFile = if (captureMode == CaptureMode.ReconstructionMono) { // TODO
-            File(
-                    mediaStorageDir.path + File.separator + "IMG_mono_" +
-                            timeStamp + "_" + String.format("%02d",diaLed) + "_" + cnt.toString().padStart(3, '0')  + ".jpg")
-        } else {
-            val colors = arrayOf("r", "g", "b")
-            if (cnt == 0) {
+        val mediaFile: File = when(captureMode) {
+            CaptureMode.ReconstructionMono -> {
                 File(
-                        mediaStorageDir.path + File.separator + "IMG_rgb_" +
-                                timeStamp + "_" + String.format("%02d",diaLed) + "_" + cnt.toString().padStart(3, '0') + ".jpg")
-            } else {
+                    "${mediaStorageDir.path}${File.separator}IMG_mono_${timeStamp}_${
+                        String.format(
+                            "%02d",
+                            diaLed
+                        )
+                    }_${
+                        cnt.toString()
+                            .padStart(3, '0')
+                    }.jpg"
+                )
+            }
+            CaptureMode.ReconstructionRGB -> {
+                val colors = arrayOf("r", "g", "b")
+                if (cnt == 0) {
+                    File(
+                        "${mediaStorageDir.path}${File.separator}IMG_rgb_${timeStamp}_${
+                            String.format(
+                                "%02d",
+                                diaLed
+                            )
+                        }_${
+                            cnt.toString()
+                                .padStart(3, '0')
+                        }.jpg"
+                    )
+                } else {
+                    File(
+                        "${mediaStorageDir.path}${File.separator}IMG_rgb_${timeStamp}_${
+                            String.format(
+                                "%02d",
+                                diaLed
+                            )
+                        }_${colors[rgbIter]}_${cnt.toString().padStart(3, '0')}.jpg"
+                    )
+                }
+            }
+            CaptureMode.CaptureBrightField -> {
                 File(
-                        mediaStorageDir.path + File.separator + "IMG_rgb_" +
-                                timeStamp + "_" + String.format("%02d",diaLed) + "_" + colors[rgbIter] + "_" + cnt.toString().padStart(3, '0') + ".jpg")
+                    "${cacheDir.path}${File.separator}IMG_captureBrightField_temp.jpg"
+                )
+            }
+            CaptureMode.CaptureDarkField -> {
+                File(
+                    "${cacheDir.path}${File.separator}IMG_captureDarkField_temp.jpg"
+                )
+            }
+            CaptureMode.CapturePhase -> {
+                File(
+                    "${cacheDir.path}${File.separator}IMG_capturePhase_${cnt}_temp.jpg"
+                )
             }
         }
         return mediaFile
