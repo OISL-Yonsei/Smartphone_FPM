@@ -138,7 +138,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         }
 
         // input and output filenames
-        val fullFilepath = intent.extras!!.getString("filepath")
+        val fullFilepath = intent.extras!!.getString(ReconstructActivity.FILE_PATH)
         val firstFile = File(fullFilepath!!)
         val fileName = firstFile.name
 
@@ -168,7 +168,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
             }
             true
         }
-        save_button.setOnClickListener { saveImage() }
+        btn_save.setOnClickListener { saveImage() }
 
         // first ui change for preprocess
         message = handler.obtainMessage()

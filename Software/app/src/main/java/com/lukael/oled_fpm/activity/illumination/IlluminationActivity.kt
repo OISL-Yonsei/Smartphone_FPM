@@ -8,8 +8,6 @@
 package com.lukael.oled_fpm.activity.illumination
 
 import android.Manifest
-import android.R.attr.centerX
-import android.R.attr.centerY
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -27,8 +25,10 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.lukael.oled_fpm.R
+import com.lukael.oled_fpm.activity.capture.CaptureResultActivity
 import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureMode
 import com.lukael.oled_fpm.activity.reconstruct.ConfirmActivity
+import com.lukael.oled_fpm.activity.reconstruct.ReconstructActivity
 import com.lukael.oled_fpm.camera.CameraControllerV2WithoutPreview
 import com.lukael.oled_fpm.model.CaptureSetting
 import kotlinx.android.synthetic.main.action_bar_no_backbutton.*
@@ -47,6 +47,9 @@ class IlluminationActivity : AppCompatActivity() {
 
     private var firstFileToScan: String? = null // 0th file name, for passing
 
+    private var fileToPassToNextActivity1: String? = null // 0th file name, for passing
+    private var fileToPassToNextActivity2: String? = null // 0th file name, for passing
+
     //Requesting permission.
     private val permissions: Unit
         get() {
@@ -59,7 +62,6 @@ class IlluminationActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-        toolbar_title
 
         initSettings() // 1) get capture settings & check permissions
         makePosList() // 2) Generate point grid (xPosList and yPosList)
@@ -203,7 +205,7 @@ class IlluminationActivity : AppCompatActivity() {
                     rgbIter++
                     step = 1
                 } else { // if done capturing
-                    mediaScan() // scan 0th file into images
+                    if (captureSetting.captureMode.isReconstructMode) mediaScan() // scan 0th file into images
                     goToNextActivity() // and proceed to next activity
                 }
             }
@@ -326,7 +328,8 @@ class IlluminationActivity : AppCompatActivity() {
                     if (endString == compString) firstFileToScan = fName // scan only 0th file
                     Log.d("reconstruction - file path", file.absolutePath)
                 } else {
-                    if (step == 1) firstFileToScan = fName
+                    if (step == 1) fileToPassToNextActivity1 = fName
+                    else if (step == 2) fileToPassToNextActivity2 = fName
                     Log.d("capture - file path", file.absolutePath)
                 }
 
@@ -355,13 +358,15 @@ class IlluminationActivity : AppCompatActivity() {
         setContentView(R.layout.activity_illumination) // TODO: check if this is needed?
         if (captureSetting.captureMode.isReconstructMode) {
             val i = Intent(applicationContext, ConfirmActivity::class.java)
-            i.putExtra("filepath", firstFileToScan) // 0th file name
+            fileToPassToNextActivity1 = firstFileToScan
+            i.putExtra(ConfirmActivity.FILE_PATH, fileToPassToNextActivity1) // 0th file name
             startActivity(i)
             overridePendingTransition(0, R.anim.fade_out)
             finish()
         } else {
-            val i = Intent(applicationContext, ConfirmActivity::class.java)
-            i.putExtra("filepath", firstFileToScan) // 0th file name
+            val i = Intent(applicationContext, CaptureResultActivity::class.java)
+            i.putExtra(CaptureResultActivity.FILE_PATH_1, fileToPassToNextActivity1) // 0th file name
+            i.putExtra(CaptureResultActivity.FILE_PATH_2, fileToPassToNextActivity2) // 0th file name
             startActivity(i)
             overridePendingTransition(0, R.anim.fade_out)
             finish()

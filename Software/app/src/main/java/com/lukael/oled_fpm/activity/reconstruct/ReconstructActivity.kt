@@ -20,4 +20,8 @@ interface ReconstructActivity {
     fun defineSystem(defineSystemInput: HashmapData): SystemOpts
     fun fpmFunc(reconstructInputData: HashmapData?)
     fun myAngleComplex(mats: Array<Mat?>): Mat
+
+    companion object {
+        const val FILE_PATH = "file_path"
+    }
 }

@@ -65,7 +65,7 @@ class SelectImageSetActivity : AppCompatActivity() {
             val fullFilepath = getImageInfo(thumbsIDList[selectedIndex])
             // Transfer to next activity
             val intent = Intent(applicationContext, ConfirmActivity::class.java)
-            intent.putExtra("filepath", fullFilepath)
+            intent.putExtra(ConfirmActivity.FILE_PATH, fullFilepath)
             startActivity(intent)
             overridePendingTransition(0, R.anim.fade_out)
             finish()

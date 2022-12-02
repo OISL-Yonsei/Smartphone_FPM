@@ -48,6 +48,7 @@
         <activity android:name=".activity.reconstruct.RGBReconstructActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.reconstruct.ConfirmActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.illumination.FocusActivity" android:theme="@style/AppTheme2"  android:screenOrientation="portrait"/>
+        <activity android:name=".activity.capture.CaptureResultActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.test.TestActivity" android:screenOrientation="portrait"/>
     </application>
 
