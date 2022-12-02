@@ -17,7 +17,7 @@ class CaptureSetting(
     var captureMode: CaptureMode
 ) : Serializable {
     companion object {
-        val Default = CaptureSetting(
+        val Default get() = CaptureSetting(
             3,
             20,
             10,

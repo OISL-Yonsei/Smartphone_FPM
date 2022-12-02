@@ -21,7 +21,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.lukael.oled_fpm.R
@@ -79,67 +78,73 @@ class IlluminationActivity : AppCompatActivity() {
     private fun makePosList(){
         val pixel_distance = 0.04857
 
-        if(captureSetting.illuminationMode == 0) {
+        when(captureSetting.captureMode) {
+            CaptureMode.ReconstructionRGB, CaptureMode.ReconstructionMono -> {
+                when (captureSetting.illuminationMode) {
+                    0 -> {
+                        // makes position list
+                        val halfRow = captureSetting.dotsInRow / 2
+                        for (i in -halfRow..halfRow) {
+                            for (j in -halfRow..halfRow) {
+                                if (i * i + j * j < halfRow * halfRow) {
+                                    val pointDist = hypot(j * captureSetting.stepSize.toDouble(),i * captureSetting.stepSize.toDouble())
+                                    val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleheight.toDouble())
+                                    val gain =
+                                        (lightDistance / captureSetting.sampleheight).pow(2.0)
+                                    val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointDist*pixel_distance))))*gain)
+                                    posList.add(Pos((j * captureSetting.stepSize).toFloat(), (i * captureSetting.stepSize).toFloat(), radius.toFloat()))
+                                }
+                            }
+                        }
+                        Log.e("dotsInRow", captureSetting.dotsInRow.toString())
+                        Log.e("halfRow", halfRow.toString())
+                        Log.e("posnum", posList.size.toString())
+                    }
+                    1 -> {
+                        val halfRow = captureSetting.dotsInRow / 2
 
-            // makes position list
-            val halfRow = captureSetting.dotsInRow / 2
-            for (i in -halfRow..halfRow) {
-                for (j in -halfRow..halfRow) {
-                    if (i * i + j * j < halfRow * halfRow) {
-                        var pointdist = hypot(j * captureSetting.stepSize.toDouble(),i * captureSetting.stepSize.toDouble())
-                        var light_distance = hypot(pointdist*pixel_distance,captureSetting.sampleheight.toDouble())
-                        var gain = pow(light_distance/captureSetting.sampleheight,2.0)
-                        var radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointdist*pixel_distance))))*gain)
-                        posList.add(Pos((j * captureSetting.stepSize).toFloat(), (i * captureSetting.stepSize).toFloat(), radius.toFloat()))
+                        var uniform_x_pos: Float
+                        var uniform_y_pos: Float
+
+                        for (i in -halfRow..halfRow) {
+                            for (j in -halfRow..halfRow) {
+                                if (i * i + j * j < halfRow * halfRow) {
+                                    uniform_x_pos = round(captureSetting.sampleheight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleheight)*j)).toFloat()
+                                    uniform_y_pos = round(captureSetting.sampleheight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleheight)*i)).toFloat()
+                                    val pointDist = hypot(uniform_x_pos.toDouble(),uniform_y_pos.toDouble())
+                                    val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleheight.toDouble())
+                                    val gain = (lightDistance / captureSetting.sampleheight).pow(2.0)
+                                    val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointDist*pixel_distance))))*gain)
+                                    posList.add(Pos(uniform_x_pos, uniform_y_pos, radius.toFloat()))
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        val pos_radius = intArrayOf(10,30,60,106,175)
+                        val circle_dot_number = intArrayOf(4,12,12,16,16)
+                        var non_uniform_x_pos: Float
+                        var non_uniform_y_pos: Float
+
+                        for (i in 0..4) {
+                            for (j in 0 until circle_dot_number[i])
+                            {
+                                non_uniform_x_pos = round(pos_radius[i] * cos(2 * 3.14 * j / circle_dot_number[i])).toFloat();
+                                non_uniform_y_pos = round(pos_radius[i] * sin(2 * 3.14 * j / circle_dot_number[i])).toFloat();
+                                val pointDist = hypot(non_uniform_x_pos.toDouble(),non_uniform_y_pos.toDouble())
+                                val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleheight.toDouble())
+                                val gain = (lightDistance / captureSetting.sampleheight).pow(2.0)
+                                val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointDist*pixel_distance))))*gain)
+                                posList.add(Pos(non_uniform_y_pos, non_uniform_x_pos, radius.toFloat()))
+                            }
+                        }
+                        Log.e("posnum", posList.size.toString())
                     }
                 }
             }
-            Log.e("dotsInRow", captureSetting.dotsInRow.toString())
-            Log.e("halfRow", halfRow.toString())
-            Log.e("posnum", posList.size.toString())
-        }
-
-        if(captureSetting.illuminationMode == 1) {
-            val halfRow = captureSetting.dotsInRow / 2
-
-            var uniform_x_pos = 0f
-            var uniform_y_pos = 0f
-
-            for (i in -halfRow..halfRow) {
-                for (j in -halfRow..halfRow) {
-                    if (i * i + j * j < halfRow * halfRow) {
-                        uniform_x_pos = round(captureSetting.sampleheight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleheight)*j)).toFloat()
-                        uniform_y_pos = round(captureSetting.sampleheight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleheight)*i)).toFloat()
-                        var pointdist = hypot(uniform_x_pos.toDouble(),uniform_y_pos.toDouble())
-                        var light_distance = hypot(pointdist*pixel_distance,captureSetting.sampleheight.toDouble())
-                        var gain = pow(light_distance/captureSetting.sampleheight,2.0)
-                        var radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointdist*pixel_distance))))*gain)
-                        posList.add(Pos(uniform_x_pos, uniform_y_pos, radius.toFloat()))
-                    }
-                }
+            CaptureMode.CaptureBrightField, CaptureMode.CaptureDarkField, CaptureMode.CapturePhase -> {
+                posList.add(Pos(0f, 0f, captureSetting.dotRadius.toFloat()))
             }
-        }
-
-        if(captureSetting.illuminationMode == 2) {
-
-            var pos_radius = intArrayOf(10,30,60,106,175)
-            var circle_dot_number = intArrayOf(4,12,12,16,16)
-            var non_uniform_x_pos = 0f
-            var non_uniform_y_pos = 0f
-
-            for (i in 0..4) {
-                for (j in 0..circle_dot_number[i]-1)
-                {
-                    non_uniform_x_pos = round(pos_radius[i] * cos(2 * 3.14 * j / circle_dot_number[i])).toFloat();
-                    non_uniform_y_pos = round(pos_radius[i] * sin(2 * 3.14 * j / circle_dot_number[i])).toFloat();
-                    var pointdist = hypot(non_uniform_x_pos.toDouble(),non_uniform_y_pos.toDouble())
-                    var light_distance = hypot(pointdist*pixel_distance,captureSetting.sampleheight.toDouble())
-                    var gain = pow(light_distance/captureSetting.sampleheight,2.0)
-                    var radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointdist*pixel_distance))))*gain)
-                    posList.add(Pos(non_uniform_y_pos, non_uniform_x_pos,radius.toFloat()))
-                }
-            }
-            Log.e("posnum", posList.size.toString())
         }
     }
 
@@ -209,7 +214,7 @@ class IlluminationActivity : AppCompatActivity() {
                     dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
                     dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
                     dotStatus.radius = posList[step - 1].radius
-                    var pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
+                    val pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
                     dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
                 }
                 else -> { // rgb
@@ -217,7 +222,7 @@ class IlluminationActivity : AppCompatActivity() {
                     dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
                     dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
                     dotStatus.radius = posList[step - 1].radius
-                    var pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
+                    val pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
                     dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
                 }
             }
