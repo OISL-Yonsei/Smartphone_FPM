@@ -304,8 +304,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
     }
 
     override fun saveImage() {
-        fileSaver.saveBmpImage(applicationContext, resultOBitmap!!, ampFileName)
-        fileSaver.saveBmpImage(applicationContext, resultOBitmapAngle!!, phaseFileName)
+        fileSaver.saveBmpImage(applicationContext, resultOBitmap!!, ampFileName!!)
+        fileSaver.saveBmpImage(applicationContext, resultOBitmapAngle!!, phaseFileName!!)
     }
 
     override fun showBefore() {
