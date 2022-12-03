@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.lukael.oled_fpm.R
 import com.lukael.oled_fpm.databinding.ActivityCaptureResultBinding
+import kotlinx.android.synthetic.main.action_bar.*
 
 class CaptureResultActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +27,8 @@ class CaptureResultActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener {
 
         }
+        
+        back_button.setOnClickListener { finish() }
     }
 
     private fun loadImages(binding: ActivityCaptureResultBinding) {
