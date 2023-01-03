@@ -366,8 +366,9 @@ class IlluminationActivity : AppCompatActivity() {
             finish()
         } else {
             val i = Intent(applicationContext, CaptureResultActivity::class.java)
-            i.putExtra(CaptureResultActivity.FILE_PATH_1, fileToPassToNextActivity1) // 0th file name
-            i.putExtra(CaptureResultActivity.FILE_PATH_2, fileToPassToNextActivity2) // 0th file name
+            i.putExtra(CaptureResultActivity.FILE_PATH_1, fileToPassToNextActivity1)
+            i.putExtra(CaptureResultActivity.FILE_PATH_2, fileToPassToNextActivity2)
+            i.putExtra(CaptureResultActivity.CAPTURE_MODE, captureMode)
             startActivity(i)
             overridePendingTransition(0, R.anim.fade_out)
             finish()

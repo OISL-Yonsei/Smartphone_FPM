@@ -45,37 +45,37 @@ class FileSaver {
             }
         }
     }
-
-    fun saveTempImage(context: Context, tempFile: String, filename: String) {
-        val inputStream = FileInputStream(tempFile)
-        var outputStream: FileOutputStream? = null
-        try {
-            val sd = File(Environment.getExternalStorageDirectory().toString() + "/Pictures/FPM_RESULT")
-            var success = true
-            if (!sd.exists()) {
-                success = sd.mkdir()
-            }
-            if (success) {
-                val dest = File(sd, filename)
-                outputStream = FileOutputStream(dest)
-                // Transfer bytes from in to out
-                // Transfer bytes from in to out
-                val buf = ByteArray(1024)
-                var len: Int
-                while (inputStream.read(buf).also { len = it } > 0) {
-                    outputStream.write(buf, 0, len)
-                }
-
-                val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(dest))
-                mediaScanIntent.data = Uri.fromFile(dest)
-                context.sendBroadcast(mediaScanIntent)
-                Toast.makeText(context, "file saved", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            inputStream.close()
-            outputStream?.close()
-        }
-    }
+//
+//    fun saveTempImage(context: Context, tempFile: String, filename: String) {
+//        val inputStream = FileInputStream(tempFile)
+//        var outputStream: FileOutputStream? = null
+//        try {
+//            val sd = File(Environment.getExternalStorageDirectory().toString() + "/Pictures/FPM_RESULT")
+//            var success = true
+//            if (!sd.exists()) {
+//                success = sd.mkdir()
+//            }
+//            if (success) {
+//                val dest = File(sd, filename)
+//                outputStream = FileOutputStream(dest)
+//                // Transfer bytes from in to out
+//                // Transfer bytes from in to out
+//                val buf = ByteArray(1024)
+//                var len: Int
+//                while (inputStream.read(buf).also { len = it } > 0) {
+//                    outputStream.write(buf, 0, len)
+//                }
+//
+//                val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(dest))
+//                mediaScanIntent.data = Uri.fromFile(dest)
+//                context.sendBroadcast(mediaScanIntent)
+//                Toast.makeText(context, "file saved", Toast.LENGTH_SHORT).show()
+//            }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        } finally {
+//            inputStream.close()
+//            outputStream?.close()
+//        }
+//    }
 }

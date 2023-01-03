@@ -38,7 +38,8 @@ import kotlin.math.*
 class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
     /** on satrt **/
-    companion object { init { OpenCVLoader.initDebug() } } // load and init openCV
+    init { OpenCVLoader.initDebug() } // load and init openCV
+
     private lateinit var ledProps : LedProps // about led
     private val startTime = System.currentTimeMillis()
     private var lineDebugger = LineDebugger(startTime) // debugger
