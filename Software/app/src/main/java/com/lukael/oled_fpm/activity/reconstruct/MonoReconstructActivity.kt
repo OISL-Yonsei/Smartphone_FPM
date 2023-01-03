@@ -38,7 +38,8 @@ import kotlin.math.*
 class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
 
     /** on satrt **/
-    companion object { init { OpenCVLoader.initDebug() } } // load and init openCV
+    init { OpenCVLoader.initDebug() } // load and init openCV
+
     private lateinit var ledProps : LedProps // about led
     private val startTime = System.currentTimeMillis()
     private var lineDebugger = LineDebugger(startTime) // debugger
@@ -138,7 +139,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
         }
 
         // input and output filenames
-        val fullFilepath = intent.extras!!.getString("filepath")
+        val fullFilepath = intent.extras!!.getString(ReconstructActivity.FILE_PATH)
         val firstFile = File(fullFilepath!!)
         val fileName = firstFile.name
 
@@ -168,7 +169,7 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
             }
             true
         }
-        save_button.setOnClickListener { saveImage() }
+        btn_save.setOnClickListener { saveImage() }
 
         // first ui change for preprocess
         message = handler.obtainMessage()
@@ -304,8 +305,8 @@ class MonoReconstructActivity : AppCompatActivity(), ReconstructActivity {
     }
 
     override fun saveImage() {
-        fileSaver.saveBmpImage(applicationContext, resultOBitmap!!, ampFileName)
-        fileSaver.saveBmpImage(applicationContext, resultOBitmapAngle!!, phaseFileName)
+        fileSaver.saveBmpImage(applicationContext, resultOBitmap!!, ampFileName!!)
+        fileSaver.saveBmpImage(applicationContext, resultOBitmapAngle!!, phaseFileName!!)
     }
 
     override fun showBefore() {

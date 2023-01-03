@@ -41,13 +41,14 @@
             android:label="@string/title_activity_display"
             android:screenOrientation="portrait"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".activity.illumination.CaptureOptionActivity" android:screenOrientation="portrait"/>
+        <activity android:name=".activity.illumination.captureoption.CaptureOptionActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.reconstruct.MonoReconstructActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.reconstruct.CropImageActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.reconstruct.SelectImageSetActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.reconstruct.RGBReconstructActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.reconstruct.ConfirmActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.illumination.FocusActivity" android:theme="@style/AppTheme2"  android:screenOrientation="portrait"/>
+        <activity android:name=".activity.capture.CaptureResultActivity" android:screenOrientation="portrait"/>
         <activity android:name=".activity.test.TestActivity" android:screenOrientation="portrait"/>
     </application>
 

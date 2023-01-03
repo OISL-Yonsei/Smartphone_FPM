@@ -17,7 +17,7 @@ import org.opencv.imgcodecs.Imgcodecs
 import java.io.File
 
 class ConfirmActivity : AppCompatActivity() {
-    companion object { init { OpenCVLoader.initDebug() } }
+    init { OpenCVLoader.initDebug() }
 
     private var fullFilepath: String? = null
     private val mLastClickTime: Long = 0
@@ -60,7 +60,7 @@ class ConfirmActivity : AppCompatActivity() {
         supportActionBar!!.setCustomView(R.layout.action_bar)
 
         // get file
-        fullFilepath = intent.getStringExtra("filepath")
+        fullFilepath = intent.getStringExtra(FILE_PATH)
 
         //Reading the Image from the file
         fullImage = Imgcodecs.imread(fullFilepath, Imgcodecs.IMREAD_GRAYSCALE)
@@ -86,7 +86,7 @@ class ConfirmActivity : AppCompatActivity() {
     private fun goToNextAtivity() {
         val intent = Intent(applicationContext, CropImageActivity::class.java)
         // Transfer to next activity
-        intent.putExtra("filepath", fullFilepath)
+        intent.putExtra(CropImageActivity.FILE_PATH, fullFilepath)
         startActivity(intent)
         overridePendingTransition(0, R.anim.fade_out)
         finishWitoutRedirect()
@@ -103,5 +103,9 @@ class ConfirmActivity : AppCompatActivity() {
         startActivity(intent)
         super.finish()
         overridePendingTransition(0, R.anim.fade_out)
+    }
+
+    companion object {
+        const val FILE_PATH = "file_path"
     }
 }

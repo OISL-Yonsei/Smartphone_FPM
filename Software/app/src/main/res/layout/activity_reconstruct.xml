@@ -64,7 +64,7 @@
             android:layout_height="match_parent"/>
 
         <Button
-            android:id="@+id/save_button"
+            android:id="@+id/btn_save"
             android:textColor="#ffffff"
             android:background="@drawable/button_background"
             android:layout_width="80dp"

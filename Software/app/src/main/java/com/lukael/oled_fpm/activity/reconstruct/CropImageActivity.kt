@@ -20,7 +20,7 @@ import org.opencv.core.Rect
 import org.opencv.imgcodecs.Imgcodecs
 
 class CropImageActivity : AppCompatActivity() {
-    companion object { init { OpenCVLoader.initDebug() } }
+    init { OpenCVLoader.initDebug() }
 
     private var fullFilepath: String? = null
     private var roiSelected = false
@@ -50,7 +50,7 @@ class CropImageActivity : AppCompatActivity() {
 
         // get file
         val intent = intent
-        fullFilepath = intent.extras!!.getString("filepath")
+        fullFilepath = intent.extras!!.getString(FILE_PATH)
 
         //Reading the Image from the file
         fullImage = Imgcodecs.imread(fullFilepath, Imgcodecs.IMREAD_GRAYSCALE)
@@ -161,7 +161,7 @@ class CropImageActivity : AppCompatActivity() {
             // Transfer to next activity
             intent.putExtra("nStart[0]", nstart[0])
             intent.putExtra("nStart[1]", nstart[1])
-            intent.putExtra("filepath", fullFilepath)
+            intent.putExtra(ReconstructActivity.FILE_PATH, fullFilepath)
             startActivity(intent)
             overridePendingTransition(0, R.anim.fade_out)
             mLastClickTime = SystemClock.elapsedRealtime()
@@ -180,5 +180,9 @@ class CropImageActivity : AppCompatActivity() {
         startActivity(intent)
         super.finish()
         overridePendingTransition(0, R.anim.fade_out)
+    }
+
+    companion object {
+        const val FILE_PATH = "file_path"
     }
 }
