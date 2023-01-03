@@ -43,11 +43,11 @@
 
     <LinearLayout
         android:id="@+id/result_buttons"
-        android:visibility="invisible"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
         android:orientation="horizontal"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -55,7 +55,7 @@
             android:id="@+id/before_after_button"
             android:textColor="#ffffff"
             android:background="@drawable/button_background"
-            android:layout_width="80dp"
+            android:layout_width="100dp"
             android:layout_height="60dp"
             android:text="BEFORE" />
 
@@ -78,8 +78,8 @@
 
         <Button
             android:id="@+id/roi_button"
-            android:textColor="#000000"
-            android:background="@drawable/button_roi_background"
+            android:textColor="#ffffff"
+            android:background="@drawable/button_background"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:text="ROI" />
