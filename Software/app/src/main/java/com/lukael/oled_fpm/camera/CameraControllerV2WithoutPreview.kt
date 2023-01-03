@@ -39,9 +39,12 @@ import java.util.concurrent.TimeUnit
  */
 
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-class CameraControllerV2WithoutPreview(private val context: Context,
-                                       private val imgCnt: Int,
-                                       private val diaLed: Int) {
+class CameraControllerV2WithoutPreview(
+    private val context: Context,
+    private val imgCnt: Int,
+    private val diaLed: Int,
+    private val onImageSaved: () -> Unit
+) {
     private var mCameraId: String? = null
     private var mCaptureSession: CameraCaptureSession? = null
     private var mCameraDevice: CameraDevice? = null
@@ -147,7 +150,7 @@ class CameraControllerV2WithoutPreview(private val context: Context,
             if (curImgCnt == imgCnt) {
                 Log.d(TAG, "Image count reached")
                 try {
-                    Thread.sleep(3000) // wait for last image to be saved
+                    onImageSaved.invoke()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

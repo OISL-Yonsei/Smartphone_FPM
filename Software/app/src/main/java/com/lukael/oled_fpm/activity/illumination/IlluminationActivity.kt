@@ -165,9 +165,21 @@ class IlluminationActivity : AppCompatActivity() {
     private fun initCamera(){
         // initialize camera
         val rgbMaxIter = if (captureMode == CaptureMode.ReconstructionRGB) 3 else 1 // take rgb or only r|g|b
-        ccv2WithoutPreview = CameraControllerV2WithoutPreview(applicationContext, rgbMaxIter * posList.size + 1, captureSetting.dotsInRow-1)
+        val imageCount = when (captureMode) { // TODO would be better if this count also goes into each setting objet...
+            CaptureMode.CaptureBrightField -> 1
+            CaptureMode.CaptureDarkField -> 1
+            CaptureMode.CapturePhase -> 2
+            CaptureMode.ReconstructionMono -> rgbMaxIter * posList.size + 1
+            CaptureMode.ReconstructionRGB -> rgbMaxIter * posList.size + 1
+        }
+        ccv2WithoutPreview = CameraControllerV2WithoutPreview(applicationContext, imageCount, captureSetting.dotsInRow-1, this::onImageSaved)
         ccv2WithoutPreview.openCamera()
         Log.d("picture # to be taken", (captureSetting.dotsInRow * captureSetting.dotsInRow + 1).toString())
+    }
+
+    private fun onImageSaved() {
+        if (captureMode.isReconstructMode) mediaScan() // scan 0th file into images
+        goToNextActivity() // and proceed to next activity
     }
 
     // 4)
@@ -205,9 +217,8 @@ class IlluminationActivity : AppCompatActivity() {
                 if (captureMode == CaptureMode.ReconstructionRGB && rgbIter < 2) {
                     rgbIter++
                     step = 1
-                } else { // if done capturing
-                    if (captureMode.isReconstructMode) mediaScan() // scan 0th file into images
-                    goToNextActivity() // and proceed to next activity
+                } else {
+                    return
                 }
             }
 
