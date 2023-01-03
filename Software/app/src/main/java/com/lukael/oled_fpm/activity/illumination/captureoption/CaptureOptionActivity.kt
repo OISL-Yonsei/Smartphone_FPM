@@ -175,24 +175,44 @@ class CaptureOptionActivity : AppCompatActivity() {
 
         // Get setting data
         captureSetting.apply {
-            binding.etDotsInRow.text.toString().toIntOrNull()?.let { dotsInRow = it }
-            binding.etDotRadius.text.toString().toIntOrNull()?.let { dotRadius = it }
-            binding.etInnerRadius.text.toString().toIntOrNull()?.let { dotInnerRadius = it }
-            binding.etStepSize.text.toString().toIntOrNull()?.let { stepSize = it }
-            binding.etExposureTime.text.toString().toLongOrNull()?.let { exposureTime = it }
-            binding.etCenterX.text.toString().toIntOrNull()?.let{ centerX = it }
-            binding.etCenterY.text.toString().toIntOrNull()?.let { centerY = it }
-            binding.etSampleHeight.text.toString().toIntOrNull()?.let { sampleHeight = it }
-            illuminationColor = when (rg_illumination_color.checkedRadioButtonId) {
-                R.id.radio_red -> CaptureSettingType.IlluminationColor.Red
-                R.id.radio_green -> CaptureSettingType.IlluminationColor.Green
-                R.id.radio_blue -> CaptureSettingType.IlluminationColor.Blue
-                else -> CaptureSettingType.IlluminationColor.White
+            if (isUseDotsInRow()) {
+                dotsInRow = binding.etDotsInRow.text.toString().toInt()
             }
-            illuminationMode = when (binding.rgIlluminationMode.checkedRadioButtonId) {
-                R.id.capture_radio_uniform -> CaptureSettingType.IlluminationMode.Uniform
-                R.id.capture_radio_k_uniform -> CaptureSettingType.IlluminationMode.KUniform
-                else-> CaptureSettingType.IlluminationMode.NonUniform
+            if (isUseDotRadius()) {
+                dotRadius = binding.etDotRadius.text.toString().toInt()
+            }
+            if (isUseDotInnerRadius()) {
+                dotInnerRadius = binding.etInnerRadius.text.toString().toInt()
+            }
+            if (isUseStepSize()) {
+                stepSize = binding.etStepSize.text.toString().toInt()
+            }
+            if (isUseExposureTime()) {
+                exposureTime = binding.etExposureTime.text.toString().toLong()
+            }
+            if (isUseCenterX()) {
+                centerX = binding.etCenterX.text.toString().toInt()
+            }
+            if (isUseCenterY()) {
+                centerY = binding.etCenterY.text.toString().toInt()
+            }
+            if (isUseSampleHeight()) {
+                sampleHeight = binding.etSampleHeight.text.toString().toInt()
+            }
+            if (isUseIlluminationColor()) {
+                illuminationColor = when (binding.rgIlluminationColor.checkedRadioButtonId) {
+                    R.id.radio_red -> CaptureSettingType.IlluminationColor.Red
+                    R.id.radio_green -> CaptureSettingType.IlluminationColor.Green
+                    R.id.radio_blue -> CaptureSettingType.IlluminationColor.Blue
+                    else -> CaptureSettingType.IlluminationColor.White
+                }
+            }
+            if (captureSetting.isUseIlluminationMode()) {
+                illuminationMode = when (binding.rgIlluminationMode.checkedRadioButtonId) {
+                    R.id.capture_radio_uniform -> CaptureSettingType.IlluminationMode.Uniform
+                    R.id.capture_radio_k_uniform -> CaptureSettingType.IlluminationMode.KUniform
+                    else -> CaptureSettingType.IlluminationMode.NonUniform
+                }
             }
         }
 
