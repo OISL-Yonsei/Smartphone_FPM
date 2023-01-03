@@ -128,31 +128,6 @@ class CaptureSettings private constructor() : Serializable {
             captureSetting.illuminationMode = value
         }
     }
-
-    companion object {
-        val ReconstructionMono
-            get() = Builder().dotsInRow(3).dotRadius(15).stepSize(35).exposureTime(200000)
-                .centerX(878).centerY(678).sampleHeight(25)
-                .illuminationMode(CaptureSettingType.IlluminationMode.Uniform)
-                .illuminationColor(CaptureSettingType.IlluminationColor.Green).build()
-
-        val ReconstructionRGB
-            get() = Builder().dotsInRow(3).dotRadius(15).stepSize(35).exposureTime(200000)
-                .centerX(878).centerY(678).sampleHeight(25)
-                .illuminationMode(CaptureSettingType.IlluminationMode.Uniform).build()
-
-        val CaptureBrightField
-            get() = Builder().dotRadius(100).exposureTime(200000).centerX(878).centerY(678)
-                .sampleHeight(25).build()
-
-        val CaptureDarkField
-            get() = Builder().dotRadius(100).dotInnerRadius(50).exposureTime(200000).centerX(878)
-                .centerY(678).sampleHeight(25).build()
-
-        val CapturePhase
-            get() = Builder().dotRadius(100).exposureTime(200000).centerX(878).centerY(678)
-                .sampleHeight(25).build()
-    }
 }
 
 sealed class CaptureOption<out T : CaptureSettingType> : Serializable {
@@ -179,10 +154,10 @@ sealed class CaptureSettingType: Serializable {
         object White : IlluminationColor()
 
         fun toColorInt(): Int = when (this) {
-            Blue -> Color.BLUE
-            Green -> Color.GREEN
-            Red -> Color.RED
-            White -> Color.WHITE
+            is Blue -> Color.BLUE
+            is Green -> Color.GREEN
+            is Red -> Color.RED
+            is White -> Color.WHITE
         }
     }
 

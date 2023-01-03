@@ -86,7 +86,7 @@ class IlluminationActivity : AppCompatActivity() {
         when(captureMode) {
             CaptureMode.ReconstructionRGB, CaptureMode.ReconstructionMono -> {
                 when (captureSetting.illuminationMode) {
-                    CaptureSettingType.IlluminationMode.Uniform -> {
+                    is CaptureSettingType.IlluminationMode.Uniform -> {
                         // makes position list
                         val halfRow = captureSetting.dotsInRow / 2
                         for (i in -halfRow..halfRow) {
@@ -105,7 +105,7 @@ class IlluminationActivity : AppCompatActivity() {
                         Log.e("halfRow", halfRow.toString())
                         Log.e("posnum", posList.size.toString())
                     }
-                    CaptureSettingType.IlluminationMode.KUniform -> {
+                    is CaptureSettingType.IlluminationMode.KUniform -> {
                         val halfRow = captureSetting.dotsInRow / 2
 
                         var uniform_x_pos: Float
@@ -125,7 +125,7 @@ class IlluminationActivity : AppCompatActivity() {
                             }
                         }
                     }
-                    CaptureSettingType.IlluminationMode.NonUniform -> {
+                    is CaptureSettingType.IlluminationMode.NonUniform -> {
                         val pos_radius = intArrayOf(10,30,60,106,175)
                         val circle_dot_number = intArrayOf(4,12,12,16,16)
                         var non_uniform_x_pos: Float
@@ -145,7 +145,6 @@ class IlluminationActivity : AppCompatActivity() {
                         }
                         Log.e("posnum", posList.size.toString())
                     }
-                    else -> error("")
                 }
             }
             CaptureMode.CaptureBrightField -> {

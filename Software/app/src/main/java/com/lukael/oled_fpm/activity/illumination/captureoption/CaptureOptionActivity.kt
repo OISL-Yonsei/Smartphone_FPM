@@ -21,7 +21,6 @@ import com.lukael.oled_fpm.activity.illumination.IlluminationActivity
 import com.lukael.oled_fpm.databinding.ActivityCaptureoptionBinding
 import com.lukael.oled_fpm.extension.setGone
 import com.lukael.oled_fpm.extension.setVisible
-import com.lukael.oled_fpm.extension.setVisibleOrGone
 import kotlinx.android.synthetic.main.action_bar.*
 import kotlinx.android.synthetic.main.activity_captureoption.*
 
@@ -159,8 +158,8 @@ class CaptureOptionActivity : AppCompatActivity() {
             binding.rgIlluminationMode.setVisible()
             binding.rgIlluminationMode.check(
                 when (defaultSettings.illuminationMode) {
-                    CaptureSettingType.IlluminationMode.Uniform -> R.id.capture_radio_k_uniform
-                    CaptureSettingType.IlluminationMode.KUniform -> R.id.capture_radio_uniform
+                    CaptureSettingType.IlluminationMode.Uniform -> R.id.capture_radio_uniform
+                    CaptureSettingType.IlluminationMode.KUniform -> R.id.capture_radio_k_uniform
                     CaptureSettingType.IlluminationMode.NonUniform -> R.id.capture_radio_non_uniform
                 }
             )
@@ -171,31 +170,29 @@ class CaptureOptionActivity : AppCompatActivity() {
 
     private fun startIlluminationCaptureActivity(binding: ActivityCaptureoptionBinding) {
         val intent = Intent(applicationContext, IlluminationActivity::class.java)
-        val captureMode = viewModel.captureModeLiveData.value
-        val captureSetting = CaptureSettings.ReconstructionMono
+        val captureMode = viewModel.captureModeLiveData.value ?: return
+        val captureSetting = captureMode.defaultSetting
 
         // Get setting data
         captureSetting.apply {
-            dotsInRow = binding.etDotsInRow.text.toString().toInt()
-            dotRadius = binding.etDotRadius.text.toString().toInt()
-            dotInnerRadius = binding.etInnerRadius.text.toString().toInt()
-            stepSize = binding.etStepSize.text.toString().toInt()
-            exposureTime = binding.etExposureTime.text.toString().toLong()
-            centerX = binding.etCenterX.text.toString().toInt()
-            centerY = binding.etCenterY.text.toString().toInt()
-            sampleHeight = binding.etSampleHeight.text.toString().toInt()
+            binding.etDotsInRow.text.toString().toIntOrNull()?.let { dotsInRow = it }
+            binding.etDotRadius.text.toString().toIntOrNull()?.let { dotRadius = it }
+            binding.etInnerRadius.text.toString().toIntOrNull()?.let { dotInnerRadius = it }
+            binding.etStepSize.text.toString().toIntOrNull()?.let { stepSize = it }
+            binding.etExposureTime.text.toString().toLongOrNull()?.let { exposureTime = it }
+            binding.etCenterX.text.toString().toIntOrNull()?.let{ centerX = it }
+            binding.etCenterY.text.toString().toIntOrNull()?.let { centerY = it }
+            binding.etSampleHeight.text.toString().toIntOrNull()?.let { sampleHeight = it }
             illuminationColor = when (rg_illumination_color.checkedRadioButtonId) {
                 R.id.radio_red -> CaptureSettingType.IlluminationColor.Red
                 R.id.radio_green -> CaptureSettingType.IlluminationColor.Green
                 R.id.radio_blue -> CaptureSettingType.IlluminationColor.Blue
-                R.id.radio_white -> CaptureSettingType.IlluminationColor.White
-                else -> error("")
+                else -> CaptureSettingType.IlluminationColor.White
             }
             illuminationMode = when (binding.rgIlluminationMode.checkedRadioButtonId) {
                 R.id.capture_radio_uniform -> CaptureSettingType.IlluminationMode.Uniform
                 R.id.capture_radio_k_uniform -> CaptureSettingType.IlluminationMode.KUniform
-                R.id.capture_radio_non_uniform -> CaptureSettingType.IlluminationMode.NonUniform
-                else -> error("")
+                else-> CaptureSettingType.IlluminationMode.NonUniform
             }
         }
 
