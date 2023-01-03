@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OLED_FPM</string>
+    <string name="app_name">SmartphoneFPM</string>
 
     <string name="title_activity_display">DisplayActivity</string>
     <string name="dummy_button">Dummy Button</string>
