@@ -10,6 +10,8 @@ import com.lukael.oled_fpm.R
 import com.lukael.oled_fpm.databinding.ActivityCaptureResultBinding
 import com.lukael.oled_fpm.util.FileSaver
 import kotlinx.android.synthetic.main.action_bar.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class CaptureResultActivity : AppCompatActivity() {
     private val viewModel: CaptureResultViewModel by viewModels()
@@ -34,12 +36,22 @@ class CaptureResultActivity : AppCompatActivity() {
             val tempFile1 = viewModel.cacheFile1LiveData.value
             val tempFile2 = viewModel.cacheFile2LiveData.value
 
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREAN).format(Date())
+            val captureMode = viewModel.captureMode
+            val modeString = captureMode?.displayName ?: "unknown"
+            val extString = ".jpg"
+            var fileName = "${modeString}_${timeStamp}"
+
             tempFile1?.let {
-                fileSaver.saveTempImage(applicationContext, it, "file_1.jpg")
+                if (tempFile2 != null) fileName += "_1"
+                fileName += extString
+                fileSaver.saveTempImage(applicationContext, it, fileName)
             }
 
             tempFile2?.let {
-                fileSaver.saveTempImage(applicationContext, it, "file_2.jpg")
+                fileName += "_2"
+                fileName += extString
+                fileSaver.saveTempImage(applicationContext, it, fileName)
             }
         }
 
@@ -60,5 +72,6 @@ class CaptureResultActivity : AppCompatActivity() {
     companion object {
         const val FILE_PATH_1 = "file_path_1"
         const val FILE_PATH_2 = "file_path_2"
+        const val CAPTURE_MODE = "capture_mode"
     }
 }
