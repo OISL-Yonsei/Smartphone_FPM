@@ -28,10 +28,9 @@ import com.lukael.oled_fpm.R
 import com.lukael.oled_fpm.activity.capture.CaptureResultActivity
 import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureMode
 import com.lukael.oled_fpm.activity.reconstruct.ConfirmActivity
-import com.lukael.oled_fpm.activity.reconstruct.ReconstructActivity
 import com.lukael.oled_fpm.camera.CameraControllerV2WithoutPreview
-import com.lukael.oled_fpm.model.CaptureSetting
-import kotlinx.android.synthetic.main.action_bar_no_backbutton.*
+import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureSettingType
+import com.lukael.oled_fpm.activity.illumination.captureoption.CaptureSettings
 import java.io.File
 import java.util.*
 import kotlin.math.*
@@ -39,7 +38,8 @@ import kotlin.math.*
 
 class IlluminationActivity : AppCompatActivity() {
     lateinit var ccv2WithoutPreview: CameraControllerV2WithoutPreview // camera preview
-    lateinit var captureSetting: CaptureSetting // capture setting passed from before activity
+    lateinit var captureSetting: CaptureSettings // capture setting passed from before activity
+    lateinit var captureMode: CaptureMode // capture mode passed from before activity
 
     // xpos and ypos list for illumination dots
     inner class Pos(val xPos: Float, val yPos : Float, val radius : Float, val innerRadius: Float = 0f)
@@ -74,7 +74,8 @@ class IlluminationActivity : AppCompatActivity() {
 
     // 1)
     private fun initSettings(){
-        captureSetting = intent.getSerializableExtra("capture_setting") as CaptureSetting // Get setting data
+        captureSetting = intent.getSerializableExtra("capture_setting") as CaptureSettings // Get setting data
+        captureMode = intent.getSerializableExtra("capture_mode") as CaptureMode // Get setting data
         permissions // check for permissions
     }
 
@@ -82,20 +83,20 @@ class IlluminationActivity : AppCompatActivity() {
     private fun makePosList(){
         val pixel_distance = 0.04857
 
-        when(captureSetting.captureMode) {
+        when(captureMode) {
             CaptureMode.ReconstructionRGB, CaptureMode.ReconstructionMono -> {
                 when (captureSetting.illuminationMode) {
-                    0 -> {
+                    CaptureSettingType.IlluminationMode.Uniform -> {
                         // makes position list
                         val halfRow = captureSetting.dotsInRow / 2
                         for (i in -halfRow..halfRow) {
                             for (j in -halfRow..halfRow) {
                                 if (i * i + j * j < halfRow * halfRow) {
                                     val pointDist = hypot(j * captureSetting.stepSize.toDouble(),i * captureSetting.stepSize.toDouble())
-                                    val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleheight.toDouble())
+                                    val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleHeight.toDouble())
                                     val gain =
-                                        (lightDistance / captureSetting.sampleheight).pow(2.0)
-                                    val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointDist*pixel_distance))))*gain)
+                                        (lightDistance / captureSetting.sampleHeight).pow(2.0)
+                                    val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleHeight/(pointDist*pixel_distance))))*gain)
                                     posList.add(Pos((j * captureSetting.stepSize).toFloat(), (i * captureSetting.stepSize).toFloat(), radius.toFloat()))
                                 }
                             }
@@ -104,7 +105,7 @@ class IlluminationActivity : AppCompatActivity() {
                         Log.e("halfRow", halfRow.toString())
                         Log.e("posnum", posList.size.toString())
                     }
-                    1 -> {
+                    CaptureSettingType.IlluminationMode.KUniform -> {
                         val halfRow = captureSetting.dotsInRow / 2
 
                         var uniform_x_pos: Float
@@ -113,18 +114,18 @@ class IlluminationActivity : AppCompatActivity() {
                         for (i in -halfRow..halfRow) {
                             for (j in -halfRow..halfRow) {
                                 if (i * i + j * j < halfRow * halfRow) {
-                                    uniform_x_pos = round(captureSetting.sampleheight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleheight)*j)).toFloat()
-                                    uniform_y_pos = round(captureSetting.sampleheight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleheight)*i)).toFloat()
+                                    uniform_x_pos = round(captureSetting.sampleHeight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleHeight)*j)).toFloat()
+                                    uniform_y_pos = round(captureSetting.sampleHeight/pixel_distance* asin(sin((captureSetting.stepSize*pixel_distance)/captureSetting.sampleHeight)*i)).toFloat()
                                     val pointDist = hypot(uniform_x_pos.toDouble(),uniform_y_pos.toDouble())
-                                    val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleheight.toDouble())
-                                    val gain = (lightDistance / captureSetting.sampleheight).pow(2.0)
-                                    val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointDist*pixel_distance))))*gain)
+                                    val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleHeight.toDouble())
+                                    val gain = (lightDistance / captureSetting.sampleHeight).pow(2.0)
+                                    val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleHeight/(pointDist*pixel_distance))))*gain)
                                     posList.add(Pos(uniform_x_pos, uniform_y_pos, radius.toFloat()))
                                 }
                             }
                         }
                     }
-                    else -> {
+                    CaptureSettingType.IlluminationMode.NonUniform -> {
                         val pos_radius = intArrayOf(10,30,60,106,175)
                         val circle_dot_number = intArrayOf(4,12,12,16,16)
                         var non_uniform_x_pos: Float
@@ -136,14 +137,15 @@ class IlluminationActivity : AppCompatActivity() {
                                 non_uniform_x_pos = round(pos_radius[i] * cos(2 * 3.14 * j / circle_dot_number[i])).toFloat();
                                 non_uniform_y_pos = round(pos_radius[i] * sin(2 * 3.14 * j / circle_dot_number[i])).toFloat();
                                 val pointDist = hypot(non_uniform_x_pos.toDouble(),non_uniform_y_pos.toDouble())
-                                val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleheight.toDouble())
-                                val gain = (lightDistance / captureSetting.sampleheight).pow(2.0)
-                                val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleheight/(pointDist*pixel_distance))))*gain)
+                                val lightDistance = hypot(pointDist*pixel_distance,captureSetting.sampleHeight.toDouble())
+                                val gain = (lightDistance / captureSetting.sampleHeight).pow(2.0)
+                                val radius = round(captureSetting.dotRadius / sin(atan((captureSetting.sampleHeight/(pointDist*pixel_distance))))*gain)
                                 posList.add(Pos(non_uniform_y_pos, non_uniform_x_pos, radius.toFloat()))
                             }
                         }
                         Log.e("posnum", posList.size.toString())
                     }
+                    else -> error("")
                 }
             }
             CaptureMode.CaptureBrightField -> {
@@ -163,7 +165,7 @@ class IlluminationActivity : AppCompatActivity() {
     // 3)
     private fun initCamera(){
         // initialize camera
-        val rgbMaxIter = if (captureSetting.captureMode == CaptureMode.ReconstructionRGB) 3 else 1 // take rgb or only r|g|b
+        val rgbMaxIter = if (captureMode == CaptureMode.ReconstructionRGB) 3 else 1 // take rgb or only r|g|b
         ccv2WithoutPreview = CameraControllerV2WithoutPreview(applicationContext, rgbMaxIter * posList.size + 1, captureSetting.dotsInRow-1)
         ccv2WithoutPreview.openCamera()
         Log.d("picture # to be taken", (captureSetting.dotsInRow * captureSetting.dotsInRow + 1).toString())
@@ -175,7 +177,7 @@ class IlluminationActivity : AppCompatActivity() {
         private val colors = intArrayOf(Color.RED, Color.GREEN, Color.BLUE, Color.WHITE)
         private var paint1 = Paint()
         private var paint2 = Paint()
-        private var step = if (captureSetting.captureMode.isReconstructMode) 0 else 1 // step in r|g|b each
+        private var step = if (captureMode.isReconstructMode) 0 else 1 // step in r|g|b each
         private var iterCount = 0 //
         private var rgbIter = 0 // r(0) -> g(1) -> b(2)
         var exposureTime_var = captureSetting.exposureTime
@@ -201,20 +203,20 @@ class IlluminationActivity : AppCompatActivity() {
 
             // check if done capturing
             if (step == posList.size + 1) { // if there is next color
-                if (captureSetting.captureMode == CaptureMode.ReconstructionRGB && rgbIter < 2) {
+                if (captureMode == CaptureMode.ReconstructionRGB && rgbIter < 2) {
                     rgbIter++
                     step = 1
                 } else { // if done capturing
-                    if (captureSetting.captureMode.isReconstructMode) mediaScan() // scan 0th file into images
+                    if (captureMode.isReconstructMode) mediaScan() // scan 0th file into images
                     goToNextActivity() // and proceed to next activity
                 }
             }
 
             // draw dot with setting
 
-            else when (captureSetting.captureMode) {
+            else when (captureMode) {
                 CaptureMode.CaptureBrightField -> {
-                    dotStatus.color = colors[captureSetting.colorCode]
+                    dotStatus.color = Color.WHITE
                     dotStatus.cx = captureSetting.centerX.toFloat()
                     dotStatus.cy = captureSetting.centerY.toFloat()
                     dotStatus.radius = posList[0].radius
@@ -224,7 +226,7 @@ class IlluminationActivity : AppCompatActivity() {
                     canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.radius, paint1)
                 }
                 CaptureMode.CaptureDarkField -> {
-                    dotStatus.color = colors[captureSetting.colorCode]
+                    dotStatus.color = Color.WHITE
                     dotStatus.cx = captureSetting.centerX.toFloat()
                     dotStatus.cy = captureSetting.centerY.toFloat()
                     dotStatus.radius = posList[0].radius
@@ -237,7 +239,7 @@ class IlluminationActivity : AppCompatActivity() {
                     canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.innerRadius, paint2)
                 }
                 CaptureMode.CapturePhase -> {
-                    dotStatus.color = colors[captureSetting.colorCode]
+                    dotStatus.color = Color.GREEN
                     dotStatus.cx = captureSetting.centerX.toFloat()
                     dotStatus.cy = captureSetting.centerY.toFloat()
                     dotStatus.radius = posList[0].radius
@@ -266,13 +268,13 @@ class IlluminationActivity : AppCompatActivity() {
                             //var pointdist = hypot((dotStatus.cx-captureSetting.centerX).toDouble(),(dotStatus.cy-captureSetting.centerY).toDouble())
                             //dotStatus.distance = hypot(pointdist*0.0486,captureSetting.sampleheight.toDouble()).toFloat()
                             dotStatus.distance =
-                                (captureSetting.sampleheight.toDouble() * 0.3).toFloat()
+                                (captureSetting.sampleHeight.toDouble() * 0.3).toFloat()
 
                             paint1.color = dotStatus.color
                             canvas.drawCircle(dotStatus.cx, dotStatus.cy, dotStatus.radius, paint1)
                         }
                         else -> {
-                            dotStatus.color = colors[captureSetting.colorCode]
+                            dotStatus.color = captureSetting.illuminationColor.toColorInt()
                             dotStatus.cx = captureSetting.centerX + (posList[step - 1].xPos)
                             dotStatus.cy = captureSetting.centerY + (posList[step - 1].yPos)
                             dotStatus.radius = posList[step - 1].radius
@@ -282,7 +284,7 @@ class IlluminationActivity : AppCompatActivity() {
                             )
                             dotStatus.distance = hypot(
                                 pointDist * 0.0486,
-                                captureSetting.sampleheight.toDouble()
+                                captureSetting.sampleHeight.toDouble()
                             ).toFloat()
 
                             paint1.color = dotStatus.color
@@ -316,12 +318,12 @@ class IlluminationActivity : AppCompatActivity() {
                 val file: File = ccv2WithoutPreview.takePicture(
                     step,
                     exposureTime_var,
-                    captureSetting.captureMode,
+                    captureMode,
                     rgbIter
                 )!!
                 val fName = file.absolutePath
 
-                if (captureSetting.captureMode.isReconstructMode) {
+                if (captureMode.isReconstructMode) {
                     // select 0th file for scanning
                     val endString = fName.substring(fName.length - 8)
                     val compString = "_000.jpg"
@@ -356,7 +358,7 @@ class IlluminationActivity : AppCompatActivity() {
     // go to activity which asks for reconstruction
     fun goToNextActivity() {
         setContentView(R.layout.activity_illumination) // TODO: check if this is needed?
-        if (captureSetting.captureMode.isReconstructMode) {
+        if (captureMode.isReconstructMode) {
             val i = Intent(applicationContext, ConfirmActivity::class.java)
             fileToPassToNextActivity1 = firstFileToScan
             i.putExtra(ConfirmActivity.FILE_PATH, fileToPassToNextActivity1) // 0th file name
@@ -380,5 +382,6 @@ class IlluminationActivity : AppCompatActivity() {
 
     companion object {
         const val CAPTURE_SETTING = "capture_setting"
+        const val CAPTURE_MODE = "capture_mode"
     }
 }

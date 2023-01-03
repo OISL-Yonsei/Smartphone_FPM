@@ -44,72 +44,161 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/til_capture_mode"
-        app:layout_constraintBottom_toTopOf="@id/start_recon_button"
+        app:layout_constraintBottom_toTopOf="@id/start_illumination_button"
         android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/editText_row"
+        <LinearLayout
+            android:id="@+id/ll_option_dots_in_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Number of dots in rows(default = 3)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="number of dots in rows"/>
+            <EditText
+                android:id="@+id/et_dots_in_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_radius"
+        <LinearLayout
+            android:id="@+id/ll_option_dot_radius"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Radius of dot(px)(default = 15)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="Radius of dot(px)"/>
+            <EditText
+                android:id="@+id/et_dot_radius"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_inner_radius"
+        <LinearLayout
+            android:id="@+id/ll_option_inner_radius"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Radius of inner dot(px)(default = 5)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="Radius of inner dot(px)"/>
+            <EditText
+                android:id="@+id/et_inner_radius"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_step"
+        <LinearLayout
+            android:id="@+id/ll_option_step_size"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="step size(px)(default = 35)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="step size(px)"/>
+            <EditText
+                android:id="@+id/et_step_size"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_exp"
+        <LinearLayout
+            android:id="@+id/ll_option_exposure_time"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="exposure time(us)(default = 200000)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="exposure time(us)"/>
+            <EditText
+                android:id="@+id/et_exposure_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_center_x"
+        <LinearLayout
+            android:id="@+id/ll_option_center_x"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Center x position(px)(default = 878)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="Center x position(px)"/>
+            <EditText
+                android:id="@+id/et_center_x"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_center_y"
+        <LinearLayout
+            android:id="@+id/ll_option_center_y"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Center y position(px)(default = 678)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="Center y position(px)"/>
+            <EditText
+                android:id="@+id/et_center_y"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
 
-        <EditText
-            android:id="@+id/editText_sample_height"
+        <LinearLayout
+            android:id="@+id/ll_option_sample_height"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Sample height(mm)(default = 25)"
-            android:inputType="number" />
+            android:orientation="horizontal"
+            android:layout_gravity="center_vertical">
+            <TextView
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="Sample height(mm)"/>
+            <EditText
+                android:id="@+id/et_sample_height"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
+
         <RadioGroup
             android:id="@+id/rg_illumination_color"
             android:layout_width="match_parent"
@@ -143,20 +232,20 @@
 
         </RadioGroup>
         <RadioGroup
-            android:id="@+id/rg_uniform_type"
+            android:id="@+id/rg_illumination_mode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
             <RadioButton
-                android:id="@+id/capture_radio_normal"
+                android:id="@+id/capture_radio_uniform"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:checked="true"
                 android:text="Uniform" />
 
             <RadioButton
-                android:id="@+id/capture_radio_uniform"
+                android:id="@+id/capture_radio_k_uniform"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:text="K-uniform" />
@@ -172,7 +261,7 @@
     </LinearLayout>
 
     <Button
-        android:id="@+id/start_recon_button"
+        android:id="@+id/start_illumination_button"
         android:layout_width="wrap_content"
         android:textSize="15sp"
         android:layout_height="50dp"

@@ -15,13 +15,13 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import com.lukael.oled_fpm.R
 import com.lukael.oled_fpm.activity.illumination.IlluminationActivity
+import com.lukael.oled_fpm.databinding.ActivityCaptureoptionBinding
 import com.lukael.oled_fpm.extension.setGone
-import com.lukael.oled_fpm.extension.setInvisible
 import com.lukael.oled_fpm.extension.setVisible
 import com.lukael.oled_fpm.extension.setVisibleOrGone
-import com.lukael.oled_fpm.model.CaptureSetting
 import kotlinx.android.synthetic.main.action_bar.*
 import kotlinx.android.synthetic.main.activity_captureoption.*
 
@@ -30,85 +30,177 @@ class CaptureOptionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_captureoption)
-        initView()
-        initObserve()
+        val binding = ActivityCaptureoptionBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        initView(binding)
+        initObserve(binding)
     }
 
-    private fun initView() {
+    private fun initView(binding: ActivityCaptureoptionBinding) {
         supportActionBar!!.displayOptions = ActionBar.DISPLAY_SHOW_CUSTOM
         supportActionBar!!.setCustomView(R.layout.action_bar)
 
-        start_recon_button.setOnClickListener{
+        back_button.setOnClickListener { finish() } // TODO...
+
+        binding.startIlluminationButton.setOnClickListener {
             val captureMode = viewModel.captureModeLiveData.value
-            if (captureMode == null) Toast.makeText(this, "Select Capture Mode.", Toast.LENGTH_SHORT).show()
-            else startCaptureActivity(captureMode)
+            if (captureMode == null) Toast.makeText(
+                this,
+                "Select Capture Mode.",
+                Toast.LENGTH_SHORT
+            ).show()
+            else startIlluminationCaptureActivity(binding)
         }
-        back_button.setOnClickListener { finish() }
 
-        tv_capture_mode.setAdapter(ArrayAdapter(this, R.layout.item_capture_mode, CaptureMode.values().map { it.displayName }))
-        tv_capture_mode.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val mode = CaptureMode.values()[position]
-            viewModel.setCaptureMode(mode)
-        }
+        binding.tvCaptureMode.setAdapter(
+            ArrayAdapter(
+                this,
+                R.layout.item_capture_mode,
+                CaptureMode.values().map { it.displayName })
+        )
+        binding.tvCaptureMode.onItemClickListener =
+            AdapterView.OnItemClickListener { _, _, position, _ ->
+                val mode = CaptureMode.values()[position]
+                viewModel.setCaptureMode(mode)
+            }
     }
 
-    private fun initObserve() {
+    private fun initObserve(binding: ActivityCaptureoptionBinding) {
         viewModel.captureModeLiveData.observe(this) {
-            updateSettingVisibility(it)
+            onUpdateCaptureMode(binding, it)
         }
     }
 
-    private fun updateSettingVisibility(captureMode: CaptureMode?) {
+    private fun onUpdateCaptureMode(
+        binding: ActivityCaptureoptionBinding,
+        captureMode: CaptureMode?
+    ) {
         if (captureMode == null) {
-            ll_settings.setGone()
-            start_recon_button.setGone()
+            binding.llSettings.setGone()
+            binding.startIlluminationButton.setGone()
             return
         }
+        binding.startIlluminationButton.setVisible()
+        binding.llSettings.setVisible()
 
-        start_recon_button.setVisible()
-        ll_settings.setVisible()
-        
-        editText_row.setVisibleOrGone(CaptureSettingType.DotsInRow in captureMode.requiredOptions)
-        editText_radius.setVisibleOrGone(CaptureSettingType.Radius in captureMode.requiredOptions)
-        editText_center_x.setVisibleOrGone(CaptureSettingType.XPos in captureMode.requiredOptions)
-        editText_center_y.setVisibleOrGone(CaptureSettingType.YPos in captureMode.requiredOptions)
-        editText_exp.setVisibleOrGone(CaptureSettingType.ExposureTime in captureMode.requiredOptions)
-        editText_inner_radius.setVisibleOrGone(CaptureSettingType.InnerRadius in captureMode.requiredOptions)
-        editText_sample_height.setVisibleOrGone(CaptureSettingType.Radius in captureMode.requiredOptions)
-        editText_step.setVisibleOrGone(CaptureSettingType.StepSize in captureMode.requiredOptions)
+        val defaultSettings = captureMode.defaultSetting
 
-        rg_illumination_color.setVisibleOrGone(CaptureSettingType.IlluminationColor in captureMode.requiredOptions)
-        rg_uniform_type.setVisibleOrGone(CaptureSettingType.UniformType in captureMode.requiredOptions)
+        if (defaultSettings.isUseDotsInRow()) {
+            binding.llOptionDotsInRow.setVisible()
+            binding.etDotsInRow.setText(defaultSettings.dotsInRow.toString())
+        } else {
+            binding.llOptionDotsInRow.setGone()
+        }
+
+        if (defaultSettings.isUseDotRadius()) {
+            binding.llOptionDotRadius.setVisible()
+            binding.etDotRadius.setText(defaultSettings.dotRadius.toString())
+        } else {
+            binding.llOptionDotRadius.setGone()
+        }
+
+        if (defaultSettings.isUseCenterX()) {
+            binding.llOptionCenterX.setVisible()
+            binding.etCenterX.setText(defaultSettings.centerX.toString())
+        } else {
+            binding.llOptionCenterX.setGone()
+        }
+
+        if (defaultSettings.isUseCenterY()) {
+            binding.llOptionCenterY.setVisible()
+            binding.etCenterY.setText(defaultSettings.centerY.toString())
+        } else {
+            binding.llOptionCenterY.setGone()
+        }
+
+        if (defaultSettings.isUseExposureTime()) {
+            binding.llOptionExposureTime.setVisible()
+            binding.etExposureTime.setText(defaultSettings.exposureTime.toString())
+        } else {
+            binding.llOptionExposureTime.setGone()
+        }
+
+        if (defaultSettings.isUseDotInnerRadius()) {
+            binding.llOptionInnerRadius.setVisible()
+            binding.etInnerRadius.setText(defaultSettings.dotInnerRadius.toString())
+        } else {
+            binding.llOptionInnerRadius.setGone()
+        }
+
+        if (defaultSettings.isUseSampleHeight()) {
+            binding.llOptionSampleHeight.setVisible()
+            binding.etSampleHeight.setText(defaultSettings.sampleHeight.toString())
+        } else {
+            binding.llOptionSampleHeight.setGone()
+        }
+
+        if (defaultSettings.isUseStepSize()) {
+            binding.llOptionStepSize.setVisible()
+            binding.etStepSize.setText(defaultSettings.stepSize.toString())
+        } else {
+            binding.llOptionStepSize.setGone()
+        }
+
+        if (defaultSettings.isUseIlluminationColor()) {
+            binding.rgIlluminationColor.setVisible()
+            binding.rgIlluminationColor.check(
+                when (defaultSettings.illuminationColor) {
+                    CaptureSettingType.IlluminationColor.Blue -> R.id.radio_blue
+                    CaptureSettingType.IlluminationColor.Green -> R.id.radio_green
+                    CaptureSettingType.IlluminationColor.Red -> R.id.radio_red
+                    CaptureSettingType.IlluminationColor.White -> R.id.radio_white
+                }
+            )
+        } else {
+            binding.rgIlluminationColor.setGone()
+        }
+
+        if (defaultSettings.isUseIlluminationMode()) {
+            binding.rgIlluminationMode.setVisible()
+            binding.rgIlluminationMode.check(
+                when (defaultSettings.illuminationMode) {
+                    CaptureSettingType.IlluminationMode.Uniform -> R.id.capture_radio_k_uniform
+                    CaptureSettingType.IlluminationMode.KUniform -> R.id.capture_radio_uniform
+                    CaptureSettingType.IlluminationMode.NonUniform -> R.id.capture_radio_non_uniform
+                }
+            )
+        } else {
+            binding.rgIlluminationMode.setGone()
+        }
     }
 
-    private fun startCaptureActivity(captureMode: CaptureMode) {
+    private fun startIlluminationCaptureActivity(binding: ActivityCaptureoptionBinding) {
         val intent = Intent(applicationContext, IlluminationActivity::class.java)
-        val captureSetting = CaptureSetting.Default // TODO: default 를 고정으로 묶어서 안전하게 관리
+        val captureMode = viewModel.captureModeLiveData.value
+        val captureSetting = CaptureSettings.ReconstructionMono
 
         // Get setting data
-        if (editText_row.text.isNotEmpty()) captureSetting.dotsInRow = editText_row.text.toString().toInt()
-        if (editText_radius.text.isNotEmpty()) captureSetting.dotRadius = editText_radius.text.toString().toInt()
-        if (editText_inner_radius.text.isNotEmpty()) captureSetting.dotInnerRadius = editText_inner_radius.text.toString().toInt()
-        if (editText_step.text.isNotEmpty()) captureSetting.stepSize = editText_step.text.toString().toInt()
-        if (editText_exp.text.isNotEmpty()) captureSetting.exposureTime = editText_exp.text.toString().toLong()
-        if (editText_center_x.text.isNotEmpty()) captureSetting.centerX = editText_center_x.text.toString().toInt()
-        if (editText_center_y.text.isNotEmpty()) captureSetting.centerY = editText_center_y.text.toString().toInt()
-        if (editText_sample_height.text.isNotEmpty()) captureSetting.sampleheight = editText_sample_height.text.toString().toInt()
-        when (rg_illumination_color.checkedRadioButtonId) {
-            R.id.radio_red -> captureSetting.colorCode = 0
-            R.id.radio_green -> captureSetting.colorCode = 1
-            R.id.radio_blue -> captureSetting.colorCode = 2
-            R.id.radio_white -> captureSetting.colorCode = 3
+        captureSetting.apply {
+            dotsInRow = binding.etDotsInRow.text.toString().toInt()
+            dotRadius = binding.etDotRadius.text.toString().toInt()
+            dotInnerRadius = binding.etInnerRadius.text.toString().toInt()
+            stepSize = binding.etStepSize.text.toString().toInt()
+            exposureTime = binding.etExposureTime.text.toString().toLong()
+            centerX = binding.etCenterX.text.toString().toInt()
+            centerY = binding.etCenterY.text.toString().toInt()
+            sampleHeight = binding.etSampleHeight.text.toString().toInt()
+            illuminationColor = when (rg_illumination_color.checkedRadioButtonId) {
+                R.id.radio_red -> CaptureSettingType.IlluminationColor.Red
+                R.id.radio_green -> CaptureSettingType.IlluminationColor.Green
+                R.id.radio_blue -> CaptureSettingType.IlluminationColor.Blue
+                R.id.radio_white -> CaptureSettingType.IlluminationColor.White
+                else -> error("")
+            }
+            illuminationMode = when (binding.rgIlluminationMode.checkedRadioButtonId) {
+                R.id.capture_radio_uniform -> CaptureSettingType.IlluminationMode.Uniform
+                R.id.capture_radio_k_uniform -> CaptureSettingType.IlluminationMode.KUniform
+                R.id.capture_radio_non_uniform -> CaptureSettingType.IlluminationMode.NonUniform
+                else -> error("")
+            }
         }
-        when (rg_uniform_type.checkedRadioButtonId) {
-            R.id.capture_radio_normal -> captureSetting.illuminationMode = 0
-            R.id.capture_radio_uniform -> captureSetting.illuminationMode = 1
-            R.id.capture_radio_non_uniform -> captureSetting.illuminationMode = 2
-        }
-        captureSetting.captureMode = captureMode
 
         // Transfer to next activity
+        intent.putExtra(IlluminationActivity.CAPTURE_MODE, captureMode)
         intent.putExtra(IlluminationActivity.CAPTURE_SETTING, captureSetting)
         startActivity(intent)
         overridePendingTransition(0, 0)
