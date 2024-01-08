@@ -27,6 +27,9 @@ We propose a smartphone-mountable computational microscope that achieves wide-fi
 ### Workflows
 ![Figure4](https://user-images.githubusercontent.com/20560535/110205043-a6f42600-7eb9-11eb-87e0-3ee3273516f5.png)
 
+### Example Images and APK files
+![Google Drive](https://drive.google.com/drive/folders/1tvjrqGT0v9ROgk3SlGM1GNMT-ugx-2vw?usp=drive_link)
+
 ### Permissions
 This application requires the following permissions:
 - Camera capture and record.
